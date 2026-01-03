@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import Script from 'next/script'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { AddressAutocomplete } from '@/components/inputs/AddressAutocomplete'
+import { RECAPTCHA_SITE_KEY } from '@/lib/config'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -29,6 +31,15 @@ const SERVICE_OPTIONS = [
   'Snow Removal',
 ]
 
+declare global {
+  interface Window {
+    grecaptcha?: {
+      execute: (siteKey: string, options: { action: string }) => Promise<string>
+      ready?: (cb: () => void) => void
+    }
+  }
+}
+
 interface InquiryFormProps {
   businessName: string
   businessEmail?: string | null
@@ -52,6 +63,9 @@ export default function InquiryForm({
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [company, setCompany] = useState('')
+
+  const recaptchaEnabled = Boolean(RECAPTCHA_SITE_KEY)
 
   const toggleService = (service: string) => {
     setServicesInterested((prev) =>
@@ -71,6 +85,32 @@ export default function InquiryForm({
 
     setIsSubmitting(true)
 
+    let recaptchaToken: string | undefined
+
+    if (recaptchaEnabled) {
+      const grecaptcha = window.grecaptcha
+
+      if (!grecaptcha?.execute) {
+        toast.error('reCAPTCHA is not ready. Please try again.')
+        setIsSubmitting(false)
+        return
+      }
+
+      try {
+        if (grecaptcha.ready) {
+          await new Promise<void>((resolve) => grecaptcha.ready?.(resolve))
+        }
+        recaptchaToken = await grecaptcha.execute(RECAPTCHA_SITE_KEY, {
+          action: 'inquiry_submit',
+        })
+      } catch (error) {
+        console.error('reCAPTCHA error:', error)
+        toast.error('reCAPTCHA verification failed. Please try again.')
+        setIsSubmitting(false)
+        return
+      }
+    }
+
     try {
       const res = await fetch('/api/inquiries', {
         method: 'POST',
@@ -88,6 +128,8 @@ export default function InquiryForm({
           preferredContactMethod,
           preferredContactTime: preferredContactTime || null,
           notes: notes || null,
+          recaptchaToken,
+          honeypot: company || null,
         }),
       })
 
@@ -130,6 +172,12 @@ export default function InquiryForm({
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+      {recaptchaEnabled && (
+        <Script
+          src={`https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`}
+          strategy="afterInteractive"
+        />
+      )}
       <Card className="w-full max-w-2xl">
         <CardHeader className="space-y-3">
           <div className="space-y-1">
@@ -158,6 +206,17 @@ export default function InquiryForm({
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="absolute left-[-10000px] top-auto h-0 w-0 overflow-hidden" aria-hidden="true">
+              <label htmlFor="company">Company</label>
+              <input
+                id="company"
+                name="company"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium">

@@ -3,9 +3,12 @@ const RECAPTCHA_VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify'
 export async function verifyRecaptchaToken(token: string | undefined) {
   const secret = process.env.RECAPTCHA_SECRET_KEY
 
-  if (!secret || !token) {
-    // reCAPTCHA is optional; if not fully configured, skip verification
-    return { ok: true, score: null }
+  if (!secret) {
+    return { ok: true, score: null, enabled: false }
+  }
+
+  if (!token) {
+    return { ok: false, score: null, enabled: true, error: 'missing_token' }
   }
 
   try {
@@ -22,7 +25,7 @@ export async function verifyRecaptchaToken(token: string | undefined) {
     })
 
     if (!res.ok) {
-      return { ok: false, score: null }
+      return { ok: false, score: null, enabled: true, error: 'verify_failed' }
     }
 
     const data = (await res.json()) as {
@@ -33,10 +36,9 @@ export async function verifyRecaptchaToken(token: string | undefined) {
     return {
       ok: !!data.success,
       score: typeof data.score === 'number' ? data.score : null,
+      enabled: true,
     }
   } catch {
-    // Network or other failure – treat as soft failure to avoid blocking form
-    return { ok: false, score: null }
+    return { ok: false, score: null, enabled: true, error: 'verify_error' }
   }
 }
-

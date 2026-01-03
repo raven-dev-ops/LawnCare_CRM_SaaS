@@ -392,6 +392,26 @@ export interface Database {
           updated_at?: string
         }
       }
+      inquiry_rate_limits: {
+        Row: {
+          ip: string
+          window_start: string
+          request_count: number
+          updated_at: string
+        }
+        Insert: {
+          ip: string
+          window_start: string
+          request_count?: number
+          updated_at?: string
+        }
+        Update: {
+          ip?: string
+          window_start?: string
+          request_count?: number
+          updated_at?: string
+        }
+      }
       settings: {
         Row: {
           id: string
@@ -593,6 +613,10 @@ export type ServiceHistoryUpdate = Database['public']['Tables']['service_history
 export type Inquiry = Database['public']['Tables']['inquiries']['Row']
 export type InquiryInsert = Database['public']['Tables']['inquiries']['Insert']
 export type InquiryUpdate = Database['public']['Tables']['inquiries']['Update']
+
+export type InquiryRateLimit = Database['public']['Tables']['inquiry_rate_limits']['Row']
+export type InquiryRateLimitInsert = Database['public']['Tables']['inquiry_rate_limits']['Insert']
+export type InquiryRateLimitUpdate = Database['public']['Tables']['inquiry_rate_limits']['Update']
 
 export type CustomerMetric = Database['public']['Views']['customer_metrics']['Row']
 export type RouteStatistic = Database['public']['Views']['route_statistics']['Row']

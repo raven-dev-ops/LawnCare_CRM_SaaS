@@ -23,3 +23,8 @@ export const GOOGLE_MAPS_API_KEY =
     process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) ||
   ""
 
+export const RECAPTCHA_SITE_KEY =
+  (typeof process !== "undefined" &&
+    process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) ||
+  ""
+
