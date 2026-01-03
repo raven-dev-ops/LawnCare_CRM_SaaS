@@ -6,6 +6,7 @@ import { Customer } from '@/types/database.types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 import { MapPin as MapPinIcon, Navigation, DollarSign, Ruler } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SHOP_LOCATION, GOOGLE_MAPS_API_KEY } from '@/lib/config'
@@ -215,39 +216,50 @@ export function CustomersMap({ customers, focusedCustomerId, onViewInTable }: Cu
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-2">
+                <div className="grid gap-2 pt-2">
                   <Button
                     size="sm"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => {
-                      if (!selectedCustomer.latitude || !selectedCustomer.longitude) return
-                      const url = `https://www.google.com/maps/dir/?api=1&destination=${selectedCustomer.latitude},${selectedCustomer.longitude}`
-                      window.open(url, '_blank')
-                    }}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                    asChild
                   >
-                    <Navigation className="mr-2 h-4 w-4" />
-                    Navigate
+                    <Link href={`/customers/${selectedCustomer.id}`}>
+                      View Details
+                    </Link>
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => {
-                      if (onViewInTable) {
-                        onViewInTable(selectedCustomer.id)
-                        return
-                      }
-                      const element = document.querySelector(
-                        `[data-customer-row-id="${selectedCustomer.id}"]`
-                      ) as HTMLElement | null
-                      if (element) {
-                        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                      }
-                    }}
-                  >
-                    View in Table
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        if (!selectedCustomer.latitude || !selectedCustomer.longitude) return
+                        const url = `https://www.google.com/maps/dir/?api=1&destination=${selectedCustomer.latitude},${selectedCustomer.longitude}`
+                        window.open(url, '_blank')
+                      }}
+                    >
+                      <Navigation className="mr-2 h-4 w-4" />
+                      Navigate
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        if (onViewInTable) {
+                          onViewInTable(selectedCustomer.id)
+                          return
+                        }
+                        const element = document.querySelector(
+                          `[data-customer-row-id="${selectedCustomer.id}"]`
+                        ) as HTMLElement | null
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                        }
+                      }}
+                    >
+                      View in Table
+                    </Button>
+                  </div>
                 </div>
               </div>
             </InfoWindow>

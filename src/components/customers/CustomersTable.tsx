@@ -18,8 +18,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreHorizontal, Edit, Trash2, MapPin, Phone, Mail } from 'lucide-react'
+import { MoreHorizontal, Edit, Trash2, MapPin, Phone, Mail, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
@@ -364,6 +365,12 @@ export function CustomersTable({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/customers/${customer.id}`}>
+                              <User className="mr-2 h-4 w-4" />
+                              View Details
+                            </Link>
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => beginEdit(customer)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Quick Edit
