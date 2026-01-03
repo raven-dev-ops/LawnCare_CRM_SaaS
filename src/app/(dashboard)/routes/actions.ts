@@ -119,6 +119,7 @@ async function getOptimizedRoute(customers: Array<{ id: string; latitude: number
 }
 
 interface CreateRouteInput {
+  name?: string | null
   day_of_week: string
   date: string
   customers: Array<{ id: string }>
@@ -179,6 +180,7 @@ export async function createRoute(input: CreateRouteInput) {
   const { data: route, error: routeError } = await supabase
     .from('routes')
     .insert({
+      name: input.name?.trim() || null,
       date: input.date,
       day_of_week: input.day_of_week,
       status: 'planned',

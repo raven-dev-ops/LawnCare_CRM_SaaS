@@ -26,6 +26,7 @@ type ScheduleStop = {
 
 type ScheduleRoute = {
   id: string
+  name?: string | null
   date?: string | null
   day_of_week?: string | null
   status: string
@@ -233,10 +234,15 @@ export function ScheduleBoard({ routes }: ScheduleBoardProps) {
                             >
                               <div className="flex items-center justify-between">
                                 <div className="font-semibold text-slate-900">
-                                  {formatDate(route.date)}
+                                  {route.name || formatDate(route.date)}
                                 </div>
                                 <Badge className={cn('capitalize', statusClass)}>{route.status.replace('_', ' ')}</Badge>
                               </div>
+                              {route.name && (
+                                <div className="text-xs text-slate-500">
+                                  {formatDate(route.date)}
+                                </div>
+                              )}
                               <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-600">
                                 <span className="inline-flex items-center gap-1">
                                   <MapPin className="h-4 w-4" />

@@ -360,6 +360,9 @@ export function RoutesOverview({
                         </Badge>
                       </div>
                     </div>
+                    {mainRoute.name && (
+                      <div className="text-xs text-muted-foreground truncate">{mainRoute.name}</div>
+                    )}
                     <CardDescription className="text-xs flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {totalDuration} min route

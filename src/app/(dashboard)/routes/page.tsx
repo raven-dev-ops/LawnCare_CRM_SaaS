@@ -14,6 +14,7 @@ export default async function RoutesPage() {
     .from('routes')
     .select(`
       id,
+      name,
       date,
       day_of_week,
       status,

@@ -13,6 +13,7 @@ export default async function SchedulePage() {
     .from('routes')
     .select(`
       id,
+      name,
       date,
       day_of_week,
       status,

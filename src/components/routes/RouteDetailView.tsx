@@ -47,6 +47,7 @@ interface RouteStop {
 
 interface Route {
   id: string
+  name?: string | null
   day_of_week: string
   date: string
   status: string
@@ -282,7 +283,9 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0 }: R
           </Button>
 
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-2xl font-bold">{route.day_of_week} Route</h1>
+            <h1 className="text-2xl font-bold">
+              {route.name || `${route.day_of_week} Route`}
+            </h1>
             <Badge
               className={cn('capitalize', {
                 'bg-blue-100 text-blue-700': isPlanned,

@@ -206,6 +206,9 @@ export function RouteBuilder({ customers }: RouteBuilderProps) {
     setIsSaving(true)
 
     try {
+      const trimmedName = routeName.trim()
+      const resolvedName = trimmedName || `${selectedDay} Route`
+
       // Get next date for the selected day
       const today = new Date()
       const currentDay = today.getDay() // 0 = Sunday, 1 = Monday, etc.
@@ -217,6 +220,7 @@ export function RouteBuilder({ customers }: RouteBuilderProps) {
       targetDate.setDate(today.getDate() + daysUntilTarget)
 
       const result = await createRoute({
+        name: resolvedName,
         day_of_week: selectedDay,
         date: targetDate.toISOString().split('T')[0],
         customers: selectedCustomers.map((c) => ({ id: c.id })),

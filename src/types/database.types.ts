@@ -150,6 +150,7 @@ export interface Database {
       routes: {
         Row: {
           id: string
+          name: string | null
           date: string
           day_of_week: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday'
           status: 'planned' | 'in_progress' | 'completed' | 'cancelled'
@@ -168,6 +169,7 @@ export interface Database {
         }
         Insert: {
           id?: string
+          name?: string | null
           date: string
           day_of_week: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday'
           status?: 'planned' | 'in_progress' | 'completed' | 'cancelled'
@@ -186,6 +188,7 @@ export interface Database {
         }
         Update: {
           id?: string
+          name?: string | null
           date?: string
           day_of_week?: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday'
           status?: 'planned' | 'in_progress' | 'completed' | 'cancelled'
@@ -405,6 +408,7 @@ export interface Database {
       route_statistics: {
         Row: {
           id: string
+          name: string | null
           date: string
           day_of_week: string
           status: string
