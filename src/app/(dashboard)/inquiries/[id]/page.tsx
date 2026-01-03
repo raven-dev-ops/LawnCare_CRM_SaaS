@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Inbox, MapPin, Phone, Mail, DollarSign } from 'lucide-react'
+import { InquiryQuotePanel } from '@/components/inquiries/InquiryQuotePanel'
+import { ArrowLeft, Inbox, MapPin, Phone, Mail } from 'lucide-react'
 import type { Inquiry } from '@/types/database.types'
 
 const STATUS_LABELS: Record<Inquiry['status'], string> = {
@@ -156,47 +157,16 @@ export default async function InquiryDetailPage({
               <CardHeader>
                 <CardTitle className="text-sm">Quote & Conversion</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-xs text-muted-foreground">
-                <div className="flex items-center justify-between">
-                  <span>Status</span>
-                  <span className="font-medium text-foreground">
-                    {STATUS_LABELS[inquiry.status]}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Preferred contact</span>
-                  <span className="font-medium text-foreground">
-                    {inquiry.preferred_contact_method || 'Not specified'}
-                  </span>
-                </div>
-                {inquiry.preferred_contact_time && (
-                  <div className="flex items-center justify-between">
-                    <span>Best time</span>
-                    <span className="font-medium text-foreground">
-                      {inquiry.preferred_contact_time}
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between">
-                  <span>Quote amount</span>
-                  <span className="flex items-center gap-1 font-medium text-foreground">
-                    <DollarSign className="h-3 w-3" />
-                    {inquiry.quote_amount != null
-                      ? Number(inquiry.quote_amount).toFixed(2)
-                      : 'Not quoted'}
-                  </span>
-                </div>
-                {inquiry.converted_customer_id && (
-                  <div className="flex items-center justify-between pt-2 border-t mt-2">
-                    <span>Converted</span>
-                    <a
-                      href="/customers"
-                      className="font-medium text-emerald-700 hover:underline"
-                    >
-                      View in Customers
-                    </a>
-                  </div>
-                )}
+              <CardContent>
+                <InquiryQuotePanel
+                  inquiryId={inquiry.id}
+                  status={inquiry.status}
+                  preferredContactMethod={inquiry.preferred_contact_method}
+                  preferredContactTime={inquiry.preferred_contact_time}
+                  quoteAmount={inquiry.quote_amount}
+                  internalNotes={inquiry.internal_notes}
+                  convertedCustomerId={inquiry.converted_customer_id}
+                />
               </CardContent>
             </Card>
           </div>

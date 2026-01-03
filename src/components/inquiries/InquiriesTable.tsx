@@ -47,7 +47,7 @@ interface InquiriesTableProps {
 }
 
 export function InquiriesTable({ inquiries }: InquiriesTableProps) {
-  const [statusFilter, setStatusFilter] = useState<'all' | Inquiry['status']>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | Inquiry['status'] | 'quoted_not_converted'>('all')
   const [isPending, startTransition] = useTransition()
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [convertOpen, setConvertOpen] = useState(false)
@@ -55,6 +55,11 @@ export function InquiriesTable({ inquiries }: InquiriesTableProps) {
 
   const filteredInquiries = useMemo(() => {
     if (statusFilter === 'all') return inquiries
+    if (statusFilter === 'quoted_not_converted') {
+      return inquiries.filter(
+        (inq) => inq.quote_amount != null && inq.status !== 'converted'
+      )
+    }
     return inquiries.filter((inq) => inq.status === statusFilter)
   }, [inquiries, statusFilter])
 
@@ -92,7 +97,7 @@ export function InquiriesTable({ inquiries }: InquiriesTableProps) {
           <Select
             value={statusFilter}
             onValueChange={(value) =>
-              setStatusFilter(value as 'all' | Inquiry['status'])
+              setStatusFilter(value as 'all' | Inquiry['status'] | 'quoted_not_converted')
             }
           >
             <SelectTrigger className="h-8 w-[180px]">
@@ -103,6 +108,7 @@ export function InquiriesTable({ inquiries }: InquiriesTableProps) {
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="contacted">Contacted</SelectItem>
               <SelectItem value="quoted">Quoted</SelectItem>
+              <SelectItem value="quoted_not_converted">Quoted (not converted)</SelectItem>
               <SelectItem value="converted">Converted</SelectItem>
               <SelectItem value="declined">Declined</SelectItem>
               <SelectItem value="spam">Spam</SelectItem>
@@ -163,6 +169,16 @@ export function InquiriesTable({ inquiries }: InquiriesTableProps) {
                   {inq.notes && (
                     <div className="mt-1 text-xs line-clamp-2">
                       {inq.notes}
+                    </div>
+                  )}
+                  {inq.quote_amount != null && (
+                    <div className="mt-1 text-xs text-emerald-700">
+                      Quote: ${Number(inq.quote_amount).toFixed(2)}
+                    </div>
+                  )}
+                  {inq.internal_notes && (
+                    <div className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                      Internal: {inq.internal_notes}
                     </div>
                   )}
                 </TableCell>

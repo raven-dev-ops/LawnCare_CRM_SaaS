@@ -6,6 +6,45 @@ import type { Inquiry, Customer } from '@/types/database.types'
 
 type InquiryStatus = Inquiry['status']
 
+interface UpdateInquiryDetailsInput {
+  inquiryId: string
+  quoteAmount?: number | null
+  internalNotes?: string | null
+}
+
+export async function updateInquiryDetails(input: UpdateInquiryDetailsInput) {
+  const supabase = await createClient()
+
+  const updates: Partial<Inquiry> = {}
+
+  if (input.quoteAmount !== undefined) {
+    updates.quote_amount = input.quoteAmount
+  }
+
+  if (input.internalNotes !== undefined) {
+    updates.internal_notes = input.internalNotes
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return { error: 'No updates provided.' }
+  }
+
+  const { error } = await supabase
+    .from('inquiries')
+    .update(updates)
+    .eq('id', input.inquiryId)
+
+  if (error) {
+    console.error('Error updating inquiry details:', error)
+    return { error: 'Failed to update inquiry details.' }
+  }
+
+  revalidatePath('/inquiries')
+  revalidatePath(`/inquiries/${input.inquiryId}`)
+
+  return { success: true }
+}
+
 export async function updateInquiryStatus(id: string, status: InquiryStatus) {
   const supabase = await createClient()
 
