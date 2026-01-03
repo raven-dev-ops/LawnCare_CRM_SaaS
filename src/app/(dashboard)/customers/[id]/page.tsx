@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import type { Customer } from '@/types/database.types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CustomerDetailActions } from '@/components/customers/CustomerDetailActions'
+import { ServiceHistoryPanel } from '@/components/customers/ServiceHistoryPanel'
 import { Calendar, MapPin, Ruler } from 'lucide-react'
 
 const DAY_COLORS: Record<string, string> = {
@@ -173,35 +174,10 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Service History</CardTitle>
-            <CardDescription>Most recent completed services</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {!serviceHistory || serviceHistory.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No service history yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {serviceHistory.map((entry) => (
-                  <div key={entry.id} className="rounded-lg border p-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="font-medium">{entry.service_type}</div>
-                      <div className="text-muted-foreground">{formatDate(entry.service_date)}</div>
-                    </div>
-                    <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Cost: {formatCurrency(entry.cost)}</span>
-                      <span>Duration: {entry.duration_minutes ?? 'N/A'} min</span>
-                    </div>
-                    {entry.notes && (
-                      <p className="mt-2 text-xs text-muted-foreground">{entry.notes}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ServiceHistoryPanel
+          customerId={customerRecord.id}
+          entries={serviceHistory || []}
+        />
 
         <Card>
           <CardHeader>

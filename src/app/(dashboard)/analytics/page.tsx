@@ -15,5 +15,14 @@ export default async function AnalyticsPage() {
       'id, name, address, day, type, cost, has_additional_work, additional_work_cost, latitude, longitude'
     )
 
-  return <AnalyticsDashboard customers={customers || []} />
+  const { data: serviceHistory } = await supabase
+    .from('service_history')
+    .select('cost')
+
+  return (
+    <AnalyticsDashboard
+      customers={customers || []}
+      serviceHistory={serviceHistory || []}
+    />
+  )
 }

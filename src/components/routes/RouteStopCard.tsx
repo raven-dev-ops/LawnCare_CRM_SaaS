@@ -2,6 +2,16 @@
 
 import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,10 +24,12 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Check, X, SkipForward, MapPin } from 'lucide-react'
 import { updateRouteStop } from '@/app/(dashboard)/routes/actions'
+import { ServiceHistoryDialog } from '@/components/customers/ServiceHistoryDialog'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 
 interface Customer {
+  id?: string
   name?: string
   address?: string
   cost?: number
@@ -55,6 +67,8 @@ export function RouteStopCard({ stop, index, isExecuting, onStatusChange }: Rout
   const [skipReason, setSkipReason] = useState('')
   const [serviceNotes, setServiceNotes] = useState(stop.service_notes || '')
   const [isUpdating, setIsUpdating] = useState(false)
+  const [logPromptOpen, setLogPromptOpen] = useState(false)
+  const [logDialogOpen, setLogDialogOpen] = useState(false)
 
   const isCompleted = stop.status === 'completed'
   const isSkipped = stop.status === 'skipped'
@@ -76,6 +90,9 @@ export function RouteStopCard({ stop, index, isExecuting, onStatusChange }: Rout
       toast.success(`${stop.customer.name} marked as completed`)
       onStatusChange?.(stop.id, 'completed', { service_notes: serviceNotes })
       router.refresh()
+      if (stop.customer.id) {
+        setLogPromptOpen(true)
+      }
     }
     setIsUpdating(false)
   }
@@ -123,16 +140,23 @@ export function RouteStopCard({ stop, index, isExecuting, onStatusChange }: Rout
     setIsUpdating(false)
   }
 
+  const defaultServiceValues = {
+    service_date: new Date().toISOString().split('T')[0],
+    service_type: 'Lawn Service',
+    cost: stop.customer.cost ?? 0,
+  }
+
   return (
-    <Card
-      className={`overflow-hidden transition-all ${
-        isCompleted
-          ? 'border-emerald-500 bg-emerald-50'
-          : isSkipped
-          ? 'border-amber-500 bg-amber-50'
-          : 'border-gray-200'
-      }`}
-    >
+    <>
+      <Card
+        className={`overflow-hidden transition-all ${
+          isCompleted
+            ? 'border-emerald-500 bg-emerald-50'
+            : isSkipped
+            ? 'border-amber-500 bg-amber-50'
+            : 'border-gray-200'
+        }`}
+      >
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <div
@@ -280,5 +304,42 @@ export function RouteStopCard({ stop, index, isExecuting, onStatusChange }: Rout
         </div>
       </CardContent>
     </Card>
+
+    {stop.customer.id && (
+      <>
+        <AlertDialog open={logPromptOpen} onOpenChange={setLogPromptOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Log service history?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Add a service history entry for {stop.customer.name} now or skip it.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Not now</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(event) => {
+                  event.preventDefault()
+                  setLogPromptOpen(false)
+                  setLogDialogOpen(true)
+                }}
+                className="bg-emerald-500 hover:bg-emerald-600"
+              >
+                Log service
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <ServiceHistoryDialog
+          open={logDialogOpen}
+          onOpenChange={setLogDialogOpen}
+          customerId={stop.customer.id}
+          routeStopId={stop.id}
+          defaultValues={defaultServiceValues}
+        />
+      </>
+    )}
+  </>
   )
 }

@@ -18,6 +18,10 @@ import {
   Cell,
 } from 'recharts'
 
+type ServiceHistoryEntry = {
+  cost: number | null
+}
+
 type CustomerPoint = {
   id: string
   name: string
@@ -56,9 +60,10 @@ function formatCurrency(value: number) {
 
 interface AnalyticsDashboardProps {
   customers: CustomerPoint[]
+  serviceHistory: ServiceHistoryEntry[]
 }
 
-export function AnalyticsDashboard({ customers }: AnalyticsDashboardProps) {
+export function AnalyticsDashboard({ customers, serviceHistory }: AnalyticsDashboardProps) {
   const [search, setSearch] = useState('')
   const [selectedDays, setSelectedDays] = useState<string[]>([])
   const [typeFilter, setTypeFilter] = useState<string>('all')
@@ -93,6 +98,9 @@ export function AnalyticsDashboard({ customers }: AnalyticsDashboardProps) {
     .filter((c) => c.has_additional_work)
     .reduce((sum, c) => sum + Number(c.additional_work_cost || 0), 0)
   const avgRevenuePerStop = filtered.length > 0 ? totalRevenue / filtered.length : 0
+  const actualRevenue = useMemo(() => {
+    return (serviceHistory || []).reduce((sum, entry) => sum + Number(entry.cost || 0), 0)
+  }, [serviceHistory])
 
   const routesPerDay = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -286,11 +294,12 @@ export function AnalyticsDashboard({ customers }: AnalyticsDashboardProps) {
 
             <Card className="bg-white text-slate-900 border-slate-200 shadow-sm">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Revenue per week</CardTitle>
-                <CardDescription className="text-slate-500">Sum of planned stops</CardDescription>
+                <CardTitle className="text-sm font-medium">Planned revenue</CardTitle>
+                <CardDescription className="text-slate-500">Scheduled vs. serviced</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{formatCurrency(totalRevenue)}</div>
+                <div className="text-xs text-slate-500">Actual: {formatCurrency(actualRevenue)}</div>
               </CardContent>
             </Card>
 
