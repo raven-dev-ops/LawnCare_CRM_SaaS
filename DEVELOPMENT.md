@@ -172,6 +172,22 @@ Migrations are in `supabase/migrations/`:
 - `20251007200407` - Inquiries (lead capture)
 - `20251007200408` - Views & helper functions
 
+## Row Level Security (RLS)
+
+Intended access model:
+- `anon`: insert-only on `inquiries` via the public form.
+- `authenticated`: full read/write access to CRM tables (customers, routes, route_stops, service_history, inquiries, products/services).
+- `service_role`: server-only; bypasses RLS for admin/background workflows.
+
+### RLS Regression Checklist
+
+Using the anon key, confirm these reads are denied:
+- `select` from `customers`
+- `select` from `routes`
+- `select` from `route_stops`
+- `select` from `service_history`
+- `select` from `inquiries`
+
 ## Next Steps
 
 ### Immediate (Phase 2)

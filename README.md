@@ -29,6 +29,13 @@ This repository is source-available for authorized use only (see `LICENSE.md`).
 - `FEATURES.md` — feature/UI walkthrough
 - `supabase/migrations/` — database schema + RLS policies
 
+
+## Row Level Security (RLS)
+
+- `anon`: insert-only on `inquiries` via the public form; no reads from CRM tables.
+- `authenticated`: full read/write access to CRM tables and settings.
+- `service_role`: server-only; bypasses RLS for admin/background workflows.
+
 ## Scripts
 
 - `npm run dev` — start dev server (Turbopack)
