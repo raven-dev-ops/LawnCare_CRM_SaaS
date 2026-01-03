@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { APIProvider, useMapsLibrary } from '@vis.gl/react-google-maps'
 import { Input } from '@/components/ui/input'
-import { GOOGLE_MAPS_API_KEY } from '@/lib/config'
+import { GOOGLE_MAPS_BROWSER_API_KEY } from '@/lib/config'
 
 interface AddressAutocompleteProps
   extends Omit<React.ComponentProps<'input'>, 'value' | 'onChange'> {
@@ -66,7 +66,7 @@ function AddressAutocompleteInner({
 }
 
 export function AddressAutocomplete({ showMissingKeyHint = true, ...props }: AddressAutocompleteProps) {
-  const apiKey = GOOGLE_MAPS_API_KEY
+  const apiKey = GOOGLE_MAPS_BROWSER_API_KEY
 
   return (
     <div className="space-y-1">

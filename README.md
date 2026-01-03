@@ -27,6 +27,7 @@ This repository is source-available for authorized use only (see `LICENSE.md`).
 
 - `DEVELOPMENT.md` — local dev, Supabase migrations, seeding
 - `FEATURES.md` — feature/UI walkthrough
+- `MIGRATION_GUIDE.md` - Google Sheets to CRM migration steps
 - `supabase/migrations/` — database schema + RLS policies
 
 

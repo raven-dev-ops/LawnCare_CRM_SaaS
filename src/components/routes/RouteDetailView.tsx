@@ -24,7 +24,7 @@ import { RoutePolyline } from './RoutePolyline'
 import { RouteStopCard } from './RouteStopCard'
 import { startRoute, completeRoute, deleteRoute, addStopToRoute } from '@/app/(dashboard)/routes/actions'
 import { toast } from 'sonner'
-import { GOOGLE_MAPS_API_KEY } from '@/lib/config'
+import { GOOGLE_MAPS_BROWSER_API_KEY } from '@/lib/config'
 
 interface ShopLocation {
   lat: number
@@ -75,7 +75,7 @@ interface RouteDetailViewProps {
 }
 
 export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, shopLocation }: RouteDetailViewProps) {
-  const apiKey = GOOGLE_MAPS_API_KEY
+  const apiKey = GOOGLE_MAPS_BROWSER_API_KEY
   const router = useRouter()
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null)
   const [isStarting, setIsStarting] = useState(false)

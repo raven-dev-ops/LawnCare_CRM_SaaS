@@ -247,12 +247,13 @@ export async function POST(request: NextRequest) {
   const services = (data.servicesInterested || []).map((service) => service.trim()).filter(Boolean)
   const cleanedNotes = data.notes?.trim() || null
   const cleanedPhone = data.phone?.trim() || null
+  const cleanedEmail = data.email.trim().toLowerCase()
   const cleanedLotSize = data.lotSize?.trim() || null
   const cleanedPreferredTime = data.preferredContactTime?.trim() || null
 
   const { error } = await supabase.from('inquiries').insert({
     name: data.name.trim(),
-    email: data.email.trim(),
+    email: cleanedEmail,
     phone: cleanedPhone,
     address: data.address.trim(),
     property_type: data.propertyType || null,
@@ -278,7 +279,7 @@ export async function POST(request: NextRequest) {
     await sendInquiryNotifications(
       {
         name: data.name.trim(),
-        email: data.email.trim(),
+        email: cleanedEmail,
         phone: cleanedPhone,
         address: data.address.trim(),
         propertyType: data.propertyType || null,

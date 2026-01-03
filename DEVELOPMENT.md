@@ -5,7 +5,7 @@
 ### Prerequisites
 - Node.js 18+
 - Supabase account
-- Google Maps API key
+- Google Maps API keys (browser + server)
 
 ### Installation
 
@@ -16,12 +16,13 @@
 
 2. **Configure environment variables**
 
-   The `.env` file contains your Supabase credentials. Add your Google Maps API key:
+   The `.env` file contains your Supabase credentials. Add your Google Maps API keys:
    ```env
-   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+   GOOGLE_MAPS_SERVER_API_KEY=your_google_maps_server_key_here
+   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_browser_key_here
    ```
 
-   To get a Google Maps API key:
+   To get Google Maps API keys:
    - Go to [Google Cloud Console](https://console.cloud.google.com/)
    - Create a new project or select existing
    - Enable these APIs:
@@ -30,8 +31,11 @@
      - Distance Matrix API
      - Places API
      - Geocoding API
-   - Create credentials → API Key
-   - Copy the key to your `.env` file
+   - Create credentials -> API Key
+   - Create two keys:
+     - Browser key: restrict HTTP referrers to localhost and your production domains
+     - Server key: restrict by IP address or leave unrestricted for local dev
+   - Copy both keys to your `.env` file
 
 3. **Run database migrations**
 
@@ -143,7 +147,8 @@ NEXT_PUBLIC_SUPABASE_URL=        # Public URL for client
 NEXT_PUBLIC_SUPABASE_ANON_KEY=   # Public anon key for client
 
 # Google Maps
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY= # Google Maps JavaScript API key
+GOOGLE_MAPS_SERVER_API_KEY=      # Server-side Directions/Geocoding key
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY= # Browser Maps JavaScript key
 
 # reCAPTCHA (optional - for inquiry form)
 NEXT_PUBLIC_RECAPTCHA_SITE_KEY=
@@ -229,7 +234,7 @@ Using the anon key, confirm these reads are denied:
 ## Troubleshooting
 
 **Map not showing?**
-- Check that `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is set in `.env`
+- Check that `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (browser) and `GOOGLE_MAPS_SERVER_API_KEY` (server) are set in `.env`
 - Verify Maps JavaScript API is enabled in Google Cloud Console
 - Ensure API key has no restrictions or allows localhost
 

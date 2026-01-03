@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/roles'
 import { revalidatePath } from 'next/cache'
-import { GOOGLE_MAPS_API_KEY } from '@/lib/config'
+import { GOOGLE_MAPS_SERVER_API_KEY } from '@/lib/config'
 import { getShopLocation } from '@/lib/settings'
 import { haversineMiles } from '@/lib/geo'
 import { optimizeRouteNearestNeighbor } from '@/lib/routes'
@@ -32,7 +32,7 @@ async function getOptimizedRoute(customers: Array<{ id: string; latitude: number
   const allHaveCoords = customers.every(
     (c) => c.latitude != null && c.longitude != null
   )
-  const canUseGoogle = Boolean(GOOGLE_MAPS_API_KEY) && customers.length >= 2 && allHaveCoords
+  const canUseGoogle = Boolean(GOOGLE_MAPS_SERVER_API_KEY) && customers.length >= 2 && allHaveCoords
 
   // Fallback helper that uses nearest-neighbor and rough drive time
   const fallbackNearestNeighbor = () => {
@@ -80,7 +80,7 @@ async function getOptimizedRoute(customers: Array<{ id: string; latitude: number
       (c) => `${c.latitude},${c.longitude}`
     )
     const waypointsParam = waypointStrings.map(encodeURIComponent).join('|')
-    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${origin}&waypoints=optimize:true|${waypointsParam}&mode=driving&key=${GOOGLE_MAPS_API_KEY}`
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${origin}&waypoints=optimize:true|${waypointsParam}&mode=driving&key=${GOOGLE_MAPS_SERVER_API_KEY}`
 
     const response = await fetch(url)
     if (!response.ok) {

@@ -1,4 +1,4 @@
-import { GOOGLE_MAPS_API_KEY } from '@/lib/config'
+import { GOOGLE_MAPS_SERVER_API_KEY } from '@/lib/config'
 
 interface GeocodeResult {
   latitude: number
@@ -6,7 +6,7 @@ interface GeocodeResult {
 }
 
 export async function geocodeAddress(address: string): Promise<GeocodeResult | null> {
-  const apiKey = GOOGLE_MAPS_API_KEY
+  const apiKey = GOOGLE_MAPS_SERVER_API_KEY
 
   if (!apiKey) {
     console.warn('Google Maps API key not configured')

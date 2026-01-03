@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { GOOGLE_MAPS_API_KEY } from '@/lib/config'
+import { GOOGLE_MAPS_BROWSER_API_KEY } from '@/lib/config'
 import {
   ResponsiveContainer,
   BarChart as RechartsBarChart,
@@ -138,7 +138,7 @@ export function AnalyticsDashboard({ customers, serviceHistory, shopLocation }: 
     return { yes, yesPct, noPct: 100 - yesPct }
   }, [filtered])
 
-  const hasMap = Boolean(GOOGLE_MAPS_API_KEY)
+  const hasMap = Boolean(GOOGLE_MAPS_BROWSER_API_KEY)
 
   const handleDaySelect = (label: string) => {
     const value = label.toLowerCase()
@@ -398,7 +398,7 @@ export function AnalyticsDashboard({ customers, serviceHistory, shopLocation }: 
               </CardHeader>
               <CardContent className="h-[320px] sm:h-[420px] lg:h-[480px]">
                 {hasMap ? (
-                  <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
+                  <APIProvider apiKey={GOOGLE_MAPS_BROWSER_API_KEY}>
                     <MapSection
                       filtered={filtered}
                       selectedCustomerId={selectedCustomerId}

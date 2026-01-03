@@ -5,7 +5,7 @@
  * Requirements:
  * - SUPABASE_URL
  * - SUPABASE_SERVICE_ROLE_KEY
- * - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY (for best optimization; fallback used if missing)
+ * - GOOGLE_MAPS_SERVER_API_KEY (or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY fallback)
  * - Optional: NEXT_PUBLIC_SHOP_LAT / NEXT_PUBLIC_SHOP_LNG / NEXT_PUBLIC_SHOP_ADDRESS
  *
  * Run: node scripts/reoptimize-routes.js
@@ -19,7 +19,7 @@ const MILES_PER_METER = 1 / 1609.34
 
 const supabaseUrl = process.env.SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const googleMapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
+const googleMapsKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('❌ Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in env')

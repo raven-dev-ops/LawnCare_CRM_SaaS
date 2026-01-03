@@ -18,7 +18,14 @@ export const SHOP_LOCATION = {
     "16 Cherokee Dr, St Peters, MO",
 }
 
-export const GOOGLE_MAPS_API_KEY =
+export const GOOGLE_MAPS_BROWSER_API_KEY =
+  (typeof process !== "undefined" &&
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) ||
+  ""
+
+export const GOOGLE_MAPS_SERVER_API_KEY =
+  (typeof process !== "undefined" &&
+    process.env.GOOGLE_MAPS_SERVER_API_KEY) ||
   (typeof process !== "undefined" &&
     process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) ||
   ""

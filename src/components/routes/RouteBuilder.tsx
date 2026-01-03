@@ -33,7 +33,7 @@ import {
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { createRoute } from '@/app/(dashboard)/routes/actions'
-import { GOOGLE_MAPS_API_KEY } from '@/lib/config'
+import { GOOGLE_MAPS_BROWSER_API_KEY } from '@/lib/config'
 import { haversineMiles } from '@/lib/geo'
 import { optimizeRouteNearestNeighbor } from '@/lib/routes'
 import { toast } from 'sonner'
@@ -73,7 +73,7 @@ const DAYS_OF_WEEK = [
 ]
 
 export function RouteBuilder({ customers, shopLocation }: RouteBuilderProps) {
-  const apiKey = GOOGLE_MAPS_API_KEY
+  const apiKey = GOOGLE_MAPS_BROWSER_API_KEY
   const router = useRouter()
 
   const [selectedDay, setSelectedDay] = useState<string>('Tuesday')

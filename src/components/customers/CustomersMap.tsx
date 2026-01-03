@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { MapPin as MapPinIcon, Navigation, DollarSign, Ruler } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { GOOGLE_MAPS_API_KEY } from '@/lib/config'
+import { GOOGLE_MAPS_BROWSER_API_KEY } from '@/lib/config'
 
 interface ShopLocation {
   lat: number
@@ -33,7 +33,7 @@ export function CustomersMap({
   shopLocation,
 }: CustomersMapProps) {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
-  const apiKey = GOOGLE_MAPS_API_KEY
+  const apiKey = GOOGLE_MAPS_BROWSER_API_KEY
 
   // Get customers with valid coordinates
   const customersWithCoords = useMemo(() => {

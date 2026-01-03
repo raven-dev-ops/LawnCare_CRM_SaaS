@@ -86,11 +86,14 @@ export async function createCustomer(input: CreateCustomerInput) {
       distance_from_shop_km?: number
     }
 
+    const normalizedPhone = input.phone?.trim() || null
+    const normalizedEmail = input.email?.trim().toLowerCase() || null
+
     const customerData: CustomerInsert = {
       name: input.name,
       address: input.address,
-      phone: input.phone ?? null,
-      email: input.email ?? null,
+      phone: normalizedPhone,
+      email: normalizedEmail,
       type: input.type,
       cost: input.cost,
       day: input.day === 'unscheduled' ? null : input.day,
@@ -162,11 +165,14 @@ export async function updateCustomer(input: UpdateCustomerInput) {
       distance_from_shop_km?: number
     }
 
+    const normalizedPhone = input.phone?.trim() || null
+    const normalizedEmail = input.email?.trim().toLowerCase() || null
+
     const customerData: CustomerUpdate = {
       name: input.name,
       address: input.address,
-      phone: input.phone ?? null,
-      email: input.email ?? null,
+      phone: normalizedPhone,
+      email: normalizedEmail,
       type: input.type,
       cost: input.cost,
       day: input.day === 'unscheduled' ? null : input.day,
@@ -364,7 +370,7 @@ export async function importCustomers(input: {
         name: row.name.trim(),
         address: row.address.trim(),
         phone: row.phone?.trim() || null,
-        email: row.email?.trim() || null,
+        email: row.email?.trim().toLowerCase() || null,
         type: row.type ?? 'Residential',
         cost: typeof row.cost === 'number' ? row.cost : 0,
         day: row.day ?? null,
