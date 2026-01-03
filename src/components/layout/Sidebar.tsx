@@ -17,11 +17,13 @@ import {
   Inbox,
   LogIn,
   LogOut,
+  Wrench,
 } from 'lucide-react'
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Customers', href: '/customers', icon: Users },
+  { name: 'Services', href: '/services', icon: Wrench },
   { name: 'Routes', href: '/routes', icon: MapPin },
   { name: 'Schedule', href: '/schedule', icon: Calendar },
   { name: 'Inquiries', href: '/inquiries', icon: Inbox },
