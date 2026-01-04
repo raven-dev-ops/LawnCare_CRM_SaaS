@@ -82,6 +82,7 @@ Stripe checkout sessions are created from the invoice detail page. Successful we
 - `MIGRATION_GUIDE.md` - Google Sheets to CRM migration steps
 - `ARCHITECTURE.md` - system overview and data flow
 - `ARCHITECTURE_DIAGRAM.svg` - visual architecture overview
+- `ARCHITECTURE_DIAGRAM.png` - diagram export for presentations
 - `API_REFERENCE.md` - API routes and payloads
 - `DEPLOYMENT.md` - production setup checklist
 - `TROUBLESHOOTING.md` - common issues and fixes

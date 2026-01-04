@@ -8,6 +8,8 @@ LawnCare CRM is a Next.js 16 App Router application backed by Supabase. The UI u
 
 ![Architecture Diagram](ARCHITECTURE_DIAGRAM.svg)
 
+PNG export: `ARCHITECTURE_DIAGRAM.png`
+
 ## System Diagram (Text)
 
 [Browser]
