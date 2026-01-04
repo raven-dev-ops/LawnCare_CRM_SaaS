@@ -23,19 +23,6 @@ Legend: ![green](https://img.shields.io/badge/health-green) configured, ![red](h
 | SendGrid email (notifications) | ![red](https://img.shields.io/badge/health-red) | `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, `SENDGRID_FROM_NAME`, `INQUIRY_NOTIFICATION_EMAIL` | Optional |
 | Twilio SMS (notifications) | ![red](https://img.shields.io/badge/health-red) | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `INQUIRY_NOTIFICATION_PHONE` | Optional |
 
-## Connection Health
-Legend: ![green](https://img.shields.io/badge/health-green) configured, ![red](https://img.shields.io/badge/health-red) missing/disabled. Update per environment.
-
-| Connection | Health | Required env vars | Notes |
-| --- | --- | --- | --- |
-| Supabase (DB/Auth/Vault) | ![red](https://img.shields.io/badge/health-red) | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Required to run the app |
-| Stripe (payments/webhooks) | ![red](https://img.shields.io/badge/health-red) | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Required for invoicing and payments |
-| Google Maps (routing/UI) | ![red](https://img.shields.io/badge/health-red) | `GOOGLE_MAPS_SERVER_API_KEY`, `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Required for maps and routing |
-| Google Sheets (OAuth) | ![red](https://img.shields.io/badge/health-red) | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_SHEETS_REDIRECT_URI` | Used for import/export |
-| reCAPTCHA (inquiry form) | ![red](https://img.shields.io/badge/health-red) | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET_KEY` | Optional |
-| SendGrid email (notifications) | ![red](https://img.shields.io/badge/health-red) | `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, `SENDGRID_FROM_NAME`, `INQUIRY_NOTIFICATION_EMAIL` | Optional |
-| Twilio SMS (notifications) | ![red](https://img.shields.io/badge/health-red) | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `INQUIRY_NOTIFICATION_PHONE` | Optional |
-
 ## Local URLs
 - App: http://localhost:3000
 - Public inquiry form: http://localhost:3000/inquiry
