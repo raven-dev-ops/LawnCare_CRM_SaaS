@@ -4,7 +4,11 @@
 
 LawnCare CRM is a Next.js 16 App Router application backed by Supabase. The UI uses server components and client components, while API routes handle public inquiry intake, Stripe webhooks, and Google Sheets OAuth.
 
-## System Diagram
+## Architecture Diagram
+
+![Architecture Diagram](ARCHITECTURE_DIAGRAM.svg)
+
+## System Diagram (Text)
 
 [Browser]
   |  /login, /inquiry, /dashboard
