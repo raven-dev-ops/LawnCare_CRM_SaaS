@@ -1,6 +1,7 @@
 import Stripe from 'stripe'
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Database } from '@/types/database.types'
 
 export const runtime = 'nodejs'
 
@@ -26,8 +27,10 @@ async function ensureInvoiceStripeIds(params: {
   if (!supabase) {
     return { error: 'Supabase service role not configured.' }
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const adminClient = supabase as any
 
-  const updates: Record<string, string | null> = {}
+  const updates: Database['public']['Tables']['invoices']['Update'] = {}
 
   if (params.paymentIntentId) {
     updates.stripe_payment_intent_id = params.paymentIntentId
@@ -41,7 +44,7 @@ async function ensureInvoiceStripeIds(params: {
     return { ok: true }
   }
 
-  const { error } = await supabase
+  const { error } = await adminClient
     .from('invoices')
     .update({
       ...updates,
@@ -70,8 +73,10 @@ async function recordStripePayment(params: {
   if (!supabase) {
     return { error: 'Supabase service role not configured.' }
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const adminClient = supabase as any
 
-  const { data: invoice, error: invoiceError } = await supabase
+  const { data: invoice, error: invoiceError } = await adminClient
     .from('invoices')
     .select('id, total, amount_paid, status, stripe_payment_intent_id, stripe_checkout_session_id')
     .eq('id', params.invoiceId)
@@ -83,7 +88,7 @@ async function recordStripePayment(params: {
   }
 
   if (params.paymentIntentId) {
-    const { data: existingPayment } = await supabase
+    const { data: existingPayment } = await adminClient
       .from('payments')
       .select('id')
       .eq('stripe_payment_intent_id', params.paymentIntentId)
@@ -101,7 +106,7 @@ async function recordStripePayment(params: {
 
   const paidAtIso = params.paidAt || new Date().toISOString()
 
-  const { error: paymentError } = await supabase
+  const { error: paymentError } = await adminClient
     .from('payments')
     .insert({
       invoice_id: params.invoiceId,
@@ -130,7 +135,7 @@ async function recordStripePayment(params: {
     nextStatus = 'partial'
   }
 
-  const { error: updateError } = await supabase
+  const { error: updateError } = await adminClient
     .from('invoices')
     .update({
       amount_paid: nextPaid,

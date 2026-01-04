@@ -8,7 +8,7 @@ export const metadata = {
 }
 
 type CustomersPageProps = {
-  searchParams?: { archive?: string | string[] }
+  searchParams?: Promise<{ archive?: string | string[] }>
 }
 
 function resolveArchiveFilter(value?: string | string[]) {
@@ -20,7 +20,8 @@ function resolveArchiveFilter(value?: string | string[]) {
 export default async function CustomersPage({ searchParams }: CustomersPageProps) {
   const supabase = await createClient()
   const shopLocation = await getShopLocation()
-  const archiveFilter = resolveArchiveFilter(searchParams?.archive)
+  const resolvedSearchParams = searchParams ? await searchParams : undefined
+  const archiveFilter = resolveArchiveFilter(resolvedSearchParams?.archive)
 
   let customersQuery = supabase.from('customers').select('*').order('name')
   if (archiveFilter === 'active') {
