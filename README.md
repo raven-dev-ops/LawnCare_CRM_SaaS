@@ -2,7 +2,16 @@
 
 A Next.js 16 (App Router) + Supabase + Google Maps CRM for lawn care businesses with customer management, route optimization, analytics, invoices, and a public inquiry form.
 
-This repository is source-available for authorized use only (see `LICENSE.md`).
+## Highlights
+- Customer management with table and map views, filters, and CSV/Sheets import
+- Route planning, scheduling, and service history tracking
+- Public inquiry form with rate limiting, optional reCAPTCHA, and notifications
+- Invoices, line items, and Stripe checkout with webhook payment capture
+- Google Sheets integration with Supabase Vault token storage
+
+## Local URLs
+- App: http://localhost:3000
+- Public inquiry form: http://localhost:3000/inquiry
 
 ## Quick Start
 
@@ -68,9 +77,14 @@ Stripe checkout sessions are created from the invoice detail page. Successful we
 
 ## Documentation
 
-- `DEVELOPMENT.md` - local dev, Supabase migrations, seeding
-- `FEATURES.md` - feature/UI walkthrough
+- `DEVELOPMENT.md` - local dev, Supabase migrations, seeding, scripts
+- `FEATURES.md` - feature and UI walkthrough
 - `MIGRATION_GUIDE.md` - Google Sheets to CRM migration steps
+- `ARCHITECTURE.md` - system overview and data flow
+- `API_REFERENCE.md` - API routes and payloads
+- `DEPLOYMENT.md` - production setup checklist
+- `TROUBLESHOOTING.md` - common issues and fixes
+- `ROADMAP.md` - planned enhancements
 - `CONTRIBUTING.md` - contribution guidelines
 - `SECURITY.md` - security policy
 - `CHANGELOG.md` - release notes
@@ -99,6 +113,10 @@ Stripe checkout sessions are created from the invoice detail page. Successful we
 ## Testing
 
 Smoke tests live in `tests/` and cover API routes plus the login UI. Run `npm run test` (or `npm run test:watch`) during development.
+
+## Deployment
+
+See `DEPLOYMENT.md` for production setup, environment variables, and third-party integrations.
 
 ## Security
 

@@ -46,6 +46,7 @@ Duplicates are detected by **Name + Address**. You can choose to skip or keep du
 
 ## Optional: Google Sheets Connection
 If you want a live connection instead of CSV exports, go to Customers -> Import / Export -> Google Sheets, connect via OAuth, and load a sheet by URL/ID. Tokens are stored in Supabase Vault.
+Ensure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_SHEETS_REDIRECT_URI are configured.
 
 ## Workshop and Unscheduled Rules
 - **Type**: `Workshop` is a valid customer type.

@@ -1,90 +1,43 @@
 # Features Showcase
 
-## Customer Management
-
-### Table View
-- Header with stats and primary actions
-- Real-time search and filters (day, type)
-- Table and map toggle
-- Data columns: customer, address, type, day, cost, distance
-- Color-coded badges for customer types and service days
-- Row actions menu (edit, map, call, email, delete)
-
-### Map View
-- Google Maps with clustered markers
-- Marker colors by customer type
-- Info windows with address, badges, cost, and distance
-- Legend with counts and filters
+## CRM Core
+- Customer management with table and map views
+- Filters, search, and CSV import/export
+- Google Sheets integration for import/export
+- Customer geocoding and distance metrics
 
 ## Routing and Scheduling
 - Routes and route stops grouped by day
 - Route optimization via Google Directions (up to 23 stops)
-- Chunked optimization fallback for larger routes
-- Schedule and service history views
+- Nearest-neighbor fallback when Directions is unavailable
+- Schedule, crew, and service history views
 
-## Inquiries and Lead Capture
-- Public inquiry form
-- Optional reCAPTCHA validation
+## Public Inquiries
+- Public inquiry form at `/inquiry`
+- Optional reCAPTCHA validation and spam scoring
 - Rate limiting (service role required)
-- Optional notifications via email/SMS
+- Optional notifications via email or SMS
 
 ## Invoices and Payments
 - Invoice detail view with line items
 - Stripe checkout session creation
 - Webhook to record payments and update invoice status
-- Manual payment entry when needed
+- Manual payment entry support
 
-## Analytics
+## Analytics and Settings
 - Dashboard metrics and quick views
-- Revenue and operational summaries from database views
+- Business profile and notification settings
+- Role-based access with admin-only imports
 
-## Navigation
-- Sidebar navigation with active route styling
-- Logo branding and user profile area
+## UI and Design
+- Responsive layout with sidebar navigation
+- shadcn/ui + Radix UI components
+- Tailwind CSS styling with consistent badges and cards
 
-## Design System
-
-### Colors
-- Primary: Emerald-500 (#10b981)
-- Background: Slate-50
-- Sidebar: Slate-900 to Slate-800 gradient
-- Cards: White with subtle shadows
-- Borders: Slate-200/300
-
-### Typography
-- Headings: Bold with tight tracking
-- Body: Geist
-- Monospace: Geist Mono
-
-### Components
-- Rounded corners and gradient stat cards
-- Hover states and transitions on interactive elements
-- shadcn/ui + Radix UI primitives
-
-## Responsive Behavior
-- Desktop: full sidebar, 4-column stats grid
-- Tablet: collapsible sidebar, 2-column stats grid
-- Mobile: stacked cards and full-width map
-
-## Accessibility
-- Semantic HTML and ARIA labels
-- Keyboard navigation and visible focus states
-- Color contrast targets WCAG AA
-
-## Performance
-- Server-side data fetching
-- Client-side filtering (no re-fetch)
-- Lazy loading for map components
-- Turbopack for dev builds
-
-## Future Enhancements
-- Drag-and-drop route ordering
-- Bulk selection in table
-- Export to PDF
-- Dark mode support
-- Customer photos
-- Toast and empty state improvements
-- Onboarding tour
+## Scripts and Utilities
+- Geocode customers for map accuracy
+- Generate demo routes for seeded data
+- Reoptimize routes with Google Directions
 
 ## Route Optimization Notes
 - Routes use Google Directions optimization for up to 23 stops per request.

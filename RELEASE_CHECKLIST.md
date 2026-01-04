@@ -1,6 +1,7 @@
 # Release Checklist
 
 - Update `CHANGELOG.md` with user-facing changes.
+- Review docs for accuracy (`README.md`, `DEPLOYMENT.md`, `API_REFERENCE.md`).
 - Run `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build`.
 - Apply new migrations (if any) to the target Supabase project.
 - Smoke test: login, customers, routes, inquiries.

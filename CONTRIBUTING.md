@@ -21,4 +21,5 @@ For more details, see `DEVELOPMENT.md`.
 ## Pull Requests
 - Keep changes focused and small when possible.
 - Include screenshots for UI changes.
+- Update docs and `CHANGELOG.md` for user-facing changes.
 - Link related issues in the description.

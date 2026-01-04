@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Inquiry rate limiting fails closed when the service role key is missing
 - Upgraded to Next.js 16 and moved the session middleware entrypoint to `src/proxy.ts`
+- Documentation expanded with deployment, architecture, API reference, troubleshooting, and roadmap guides
 
 ## [1.0.0] - 2026-01-02
 
