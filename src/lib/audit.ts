@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database, Json } from '@/types/database.types'
+import type { Json } from '@/types/database.types'
 
 interface AuditLogInput {
   action: string
@@ -10,7 +10,7 @@ interface AuditLogInput {
 }
 
 export async function logAuditEvent(
-  supabase: SupabaseClient<Database>,
+  supabase: SupabaseClient,
   input: AuditLogInput
 ) {
   const { error } = await supabase

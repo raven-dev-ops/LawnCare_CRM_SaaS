@@ -795,6 +795,7 @@ export interface Database {
           avg_rating: number
           services_last_90_days: number
         }
+        Relationships: []
       }
       route_average_durations: {
         Row: {
@@ -811,6 +812,7 @@ export interface Database {
           samples: number
           calculated_avg_minutes: number
         }
+        Relationships: []
       }
       route_statistics: {
         Row: {
@@ -827,6 +829,7 @@ export interface Database {
           total_revenue: number
           estimated_fuel_cost: number | null
         }
+        Relationships: []
       }
     }
     Functions: {
