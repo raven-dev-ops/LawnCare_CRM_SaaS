@@ -330,6 +330,12 @@ export async function createStripeCheckoutSession(input: CreateStripeCheckoutInp
       invoice_id: invoice.id,
       invoice_number: String(invoice.invoice_number),
     },
+    payment_intent_data: {
+      metadata: {
+        invoice_id: invoice.id,
+        invoice_number: String(invoice.invoice_number),
+      },
+    },
     success_url: `${APP_URL}/invoices/${invoice.id}?stripe=success`,
     cancel_url: `${APP_URL}/invoices/${invoice.id}?stripe=cancel`,
   })

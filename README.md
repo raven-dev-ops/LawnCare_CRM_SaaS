@@ -43,6 +43,7 @@ This repository is source-available for authorized use only (see `LICENSE.md`).
    ```bash
    NEXT_PUBLIC_APP_URL=http://localhost:3000
    STRIPE_SECRET_KEY=your_stripe_secret_key
+   STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
    GOOGLE_CLIENT_ID=your_google_oauth_client_id
    GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
@@ -55,8 +56,13 @@ This repository is source-available for authorized use only (see `LICENSE.md`).
    - In the app, go to Customers -> Import/Export -> Google Sheets.
    - Click Connect, then load a sheet by URL/ID, and switch to Import to map fields.
    - Share the sheet with the Google account used for OAuth.
+   - Tokens are stored using Supabase Vault once connected.
 
-Stripe checkout sessions are created from the invoice detail page. Payments can be recorded manually; webhooks can be added later to auto-mark invoices as paid.
+4. Configure Stripe webhooks:
+   - Add an endpoint in Stripe: `https://<your-domain>/api/stripe/webhook` (local: `http://localhost:3000/api/stripe/webhook`).
+   - Subscribe to `checkout.session.completed` and `payment_intent.succeeded` events.
+
+Stripe checkout sessions are created from the invoice detail page. Successful webhook events create `payments` records and update invoice totals/status. Manual payment entry is still available.
 
 ## Documentation
 
@@ -78,6 +84,8 @@ Stripe checkout sessions are created from the invoice detail page. Payments can 
 - `npm run build` - production build
 - `npm run start` - start production server
 - `npm run lint` - ESLint
+- `npm run test` - run test suite
+- `npm run test:watch` - watch test suite
 - `npm run seed` - seed demo data
 - `npm run geocode` - geocode customers (scripted)
 - `npm run generate-routes` - generate demo routes (scripted)

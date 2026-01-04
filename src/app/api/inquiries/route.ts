@@ -88,8 +88,8 @@ async function checkRateLimit(ip: string | null): Promise<RateLimitResult> {
 
   const service = getServiceSupabase()
   if (!service) {
-    console.warn('Rate limit skipped: SUPABASE_SERVICE_ROLE_KEY missing')
-    return { limited: false }
+    console.error('Rate limit unavailable: SUPABASE_SERVICE_ROLE_KEY missing')
+    return { limited: true, retryAfterMs: RATE_LIMIT_WINDOW_MS }
   }
 
   const now = new Date()
@@ -191,9 +191,18 @@ export async function POST(request: NextRequest) {
         retryAfterMs: rateLimit.retryAfterMs,
       },
     })
+    const retryAfterSeconds = rateLimit.retryAfterMs
+      ? Math.max(1, Math.ceil(rateLimit.retryAfterMs / 1000))
+      : undefined
+
     return NextResponse.json(
       { error: 'Too many submissions. Please try again later.' },
-      { status: 429 }
+      {
+        status: 429,
+        headers: retryAfterSeconds
+          ? { 'Retry-After': String(retryAfterSeconds) }
+          : undefined,
+      }
     )
   }
 

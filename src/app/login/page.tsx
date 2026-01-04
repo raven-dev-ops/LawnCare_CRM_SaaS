@@ -6,10 +6,10 @@ const DEFAULT_REDIRECT = '/'
 const SUPABASE_AUTH_DISABLED = process.env.SUPABASE_AUTH_DISABLED === 'true'
 
 type LoginPageProps = {
-  searchParams?: {
+  searchParams?: Promise<{
     redirectedFrom?: string
     reason?: string
-  }
+  }>
 }
 
 function getSafeRedirect(target?: string) {
@@ -20,7 +20,8 @@ function getSafeRedirect(target?: string) {
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const redirectTo = getSafeRedirect(searchParams?.redirectedFrom)
+  const resolvedSearchParams = searchParams ? await searchParams : undefined
+  const redirectTo = getSafeRedirect(resolvedSearchParams?.redirectedFrom)
 
   if (!SUPABASE_AUTH_DISABLED) {
     const supabase = await createClient()
@@ -32,7 +33,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   }
 
   const message =
-    searchParams?.reason === 'auth-required'
+    resolvedSearchParams?.reason === 'auth-required'
       ? 'Please sign in to continue. Your session may have expired.'
       : undefined
 

@@ -36,10 +36,7 @@ export async function disconnectGoogleSheets() {
   }
 
   const supabase = await createClient()
-  const { error } = await supabase
-    .from('google_sheets_connections')
-    .delete()
-    .eq('singleton', true)
+  const { error } = await supabase.rpc('clear_google_sheets_connection')
 
   if (error) {
     console.error('Disconnect Google Sheets error:', error)
@@ -61,15 +58,13 @@ export async function fetchGoogleSheetPreview(input: FetchSheetInput) {
   }
 
   const supabase = await createClient()
-  const { data: connection, error: connectionError } = await supabase
-    .from('google_sheets_connections')
-    .select('*')
-    .eq('singleton', true)
-    .maybeSingle()
+  const { data: tokenRows, error: connectionError } = await supabase.rpc('get_google_sheets_tokens')
 
   if (connectionError) {
     console.error('Fetch Google Sheets connection error:', connectionError)
   }
+
+  const connection = Array.isArray(tokenRows) ? tokenRows[0] : tokenRows
 
   if (!connection?.access_token) {
     return { error: 'Connect Google Sheets before importing.' }

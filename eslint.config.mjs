@@ -22,6 +22,20 @@ const eslintConfig = [
   },
 
   {
+    files: ['tests/**/*.{ts,tsx}'],
+    languageOptions: {
+      globals: {
+        afterEach: 'readonly',
+        beforeEach: 'readonly',
+        describe: 'readonly',
+        expect: 'readonly',
+        it: 'readonly',
+        vi: 'readonly',
+      },
+    },
+  },
+
+  {
     files: ['scripts/**/*.js', 'supabase/seed.js'],
     languageOptions: {
       sourceType: 'commonjs',

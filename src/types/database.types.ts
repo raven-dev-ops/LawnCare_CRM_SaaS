@@ -563,8 +563,8 @@ export interface Database {
         Row: {
           id: string
           singleton: boolean
-          access_token: string | null
-          refresh_token: string | null
+          access_token_secret_id: string | null
+          refresh_token_secret_id: string | null
           scope: string | null
           token_type: string | null
           expiry_date: string | null
@@ -574,8 +574,8 @@ export interface Database {
         Insert: {
           id?: string
           singleton?: boolean
-          access_token?: string | null
-          refresh_token?: string | null
+          access_token_secret_id?: string | null
+          refresh_token_secret_id?: string | null
           scope?: string | null
           token_type?: string | null
           expiry_date?: string | null
@@ -585,8 +585,8 @@ export interface Database {
         Update: {
           id?: string
           singleton?: boolean
-          access_token?: string | null
-          refresh_token?: string | null
+          access_token_secret_id?: string | null
+          refresh_token_secret_id?: string | null
           scope?: string | null
           token_type?: string | null
           expiry_date?: string | null
