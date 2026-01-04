@@ -8,6 +8,7 @@
 - Google Maps API keys (browser + server)
 - Stripe keys (if testing invoices and webhooks)
 - Google Sheets OAuth credentials (if using Sheets import/export)
+- SendGrid/Twilio credentials (optional, for notifications)
 
 ### Installation
 
@@ -35,7 +36,14 @@
    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_browser_key
    ```
 
-   `SUPABASE_SERVICE_ROLE_KEY` is required to accept public inquiries and to process Stripe webhooks.
+   Optional but recommended for local routing accuracy:
+   ```env
+   NEXT_PUBLIC_SHOP_LAT=38.7839
+   NEXT_PUBLIC_SHOP_LNG=-90.4974
+   NEXT_PUBLIC_SHOP_ADDRESS=16 Cherokee Dr, St Peters, MO
+   ```
+
+   `SUPABASE_SERVICE_ROLE_KEY` is required to accept public inquiries, run scripts, and process Stripe webhooks.
 
 3. Run database migrations
 
@@ -65,6 +73,11 @@
 
    Open http://localhost:3000
 
+## Local URLs
+
+- App: http://localhost:3000
+- Public inquiry form: http://localhost:3000/inquiry
+
 ## Project Structure
 
 ```
@@ -87,6 +100,7 @@ src/
       server.ts        # Server client
       middleware.ts    # Session refresh logic
     notifications.ts   # Email/SMS helpers
+    settings.ts        # Business profile and notification settings
     utils.ts
   proxy.ts             # Next.js proxy entrypoint (session refresh)
   types/
@@ -94,10 +108,39 @@ src/
 scripts/
   geocode-customers.js
   generate-routes.js
+  reoptimize-routes.js
 supabase/
   migrations/
-tests/
+  seed.js
+
+# Docs
+README.md
+DEVELOPMENT.md
+FEATURES.md
+API_REFERENCE.md
+ARCHITECTURE.md
+DEPLOYMENT.md
+TROUBLESHOOTING.md
+ROADMAP.md
 ```
+
+## Available Scripts
+
+```bash
+npm run dev          # Start development server (Turbopack)
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+npm run typecheck    # TypeScript typecheck
+npm run test         # Run test suite
+npm run test:watch   # Watch test suite
+npm run seed         # Seed database from CSV
+npm run geocode      # Geocode customers with Google Maps API
+npm run generate-routes  # Generate demo routes with optimization
+```
+
+Additional scripts:
+- `node scripts/reoptimize-routes.js` - reoptimize existing routes and stop order
 
 ## Features Implemented
 
@@ -112,7 +155,7 @@ tests/
 - Geocoding and route visualization
 
 ### Operations
-- Routes, schedules, crew, and service history
+- Routes, schedules, crew, services, and service history
 - Dashboard analytics views
 - Settings and configuration screens
 
@@ -148,9 +191,20 @@ GOOGLE_SHEETS_REDIRECT_URI=http://localhost:3000/api/google-sheets/callback
 # reCAPTCHA (optional - for inquiry form)
 NEXT_PUBLIC_RECAPTCHA_SITE_KEY=
 RECAPTCHA_SECRET_KEY=
+RECAPTCHA_MIN_SCORE=0.5
+
+# Notifications (optional)
+INQUIRY_NOTIFICATION_EMAIL=
+SENDGRID_API_KEY=
+SENDGRID_FROM_EMAIL=
+SENDGRID_FROM_NAME=
+INQUIRY_NOTIFICATION_PHONE=
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_FROM_NUMBER=
 ```
 
-Note: `SUPABASE_SERVICE_ROLE_KEY` is required for public inquiry submissions and Stripe webhook processing. You can set `SUPABASE_AUTH_DISABLED=true` to bypass auth checks while running UI smoke tests or local demos without a Supabase instance.
+Note: `SUPABASE_SERVICE_ROLE_KEY` is required for public inquiry submissions, Stripe webhook processing, and scripts. You can set `SUPABASE_AUTH_DISABLED=true` to bypass auth checks while running UI smoke tests or local demos without a Supabase instance.
 
 ## Auth Setup (Supabase)
 
@@ -159,19 +213,6 @@ Note: `SUPABASE_SERVICE_ROLE_KEY` is required for public inquiry submissions and
    - Site URL: http://localhost:3000 (local dev)
    - Redirect URLs: http://localhost:3000/** and your production URL
 3. Create a test user in Supabase (or invite) to sign in locally.
-
-## Available Scripts
-
-```bash
-npm run dev          # Start development server (Turbopack)
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
-npm run typecheck    # TypeScript typecheck
-npm run test         # Run test suite
-npm run test:watch   # Watch test suite
-npm run seed         # Seed database from CSV
-```
 
 ## Database Migrations
 
@@ -210,38 +251,19 @@ Using the anon key, confirm these reads are denied:
 - select from `service_history`
 - select from `inquiries`
 
-## Next Steps
+## Testing and CI
 
-### Immediate (Phase 2)
-- [ ] Customer detail page improvements
-- [ ] Address autocomplete in customer forms
-- [ ] Route planning UI enhancements
-- [ ] Weekly schedule drag-and-drop
-
-### Future Features
-- [ ] Customer portal
-- [ ] Before/after photo gallery
-- [ ] Automated SMS/email campaigns
-- [ ] Weather integration
-- [ ] Real-time driver tracking
-- [ ] Advanced analytics dashboards
+- `npm run lint` and `npm run typecheck` run ESLint and TypeScript checks.
+- `npm run test` runs Vitest smoke tests for API routes and critical UI flows.
+- CI runs lint, typecheck, test, and build on every PR.
 
 ## Troubleshooting
 
-Map not showing?
-- Check that `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (browser) and `GOOGLE_MAPS_SERVER_API_KEY` (server) are set in `.env.local`
-- Verify Maps JavaScript API is enabled in Google Cloud Console
-- Ensure API key has no restrictions or allows localhost
+See `TROUBLESHOOTING.md` for common issues and fixes.
 
-Customers not loading?
-- Check Supabase connection in `.env.local`
-- Verify migrations have been run
-- Check that customers table has data (run seed script)
+## Roadmap
 
-Build errors?
-- Clear `.next` folder: `rm -rf .next`
-- Reinstall dependencies: `rm -rf node_modules && npm install`
-- Check TypeScript errors: `npx tsc --noEmit`
+See `ROADMAP.md` for planned enhancements.
 
 ## Contributing
 
