@@ -11,6 +11,11 @@ type ServiceEntry = {
   cost: number | null
 }
 
+type DateFilterQuery<T> = {
+  gte: (column: string, value: string) => T
+  lte: (column: string, value: string) => T
+}
+
 function escapeCsvValue(value: unknown) {
   if (value === null || value === undefined) return ''
   const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value)
@@ -30,12 +35,12 @@ function toCsv(rows: Array<Record<string, unknown>>) {
   return lines.join('\n')
 }
 
-function applyDateFilter(
-  query: any,
+function applyDateFilter<T extends DateFilterQuery<T>>(
+  query: T,
   start: string | null,
   end: string | null,
   field: 'date' | 'service_date'
-) {
+): T {
   let next = query
   if (start) next = next.gte(field, start)
   if (end) next = next.lte(field, end)
