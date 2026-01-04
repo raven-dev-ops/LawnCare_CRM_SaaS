@@ -69,7 +69,7 @@ function buildInquirySms(payload: InquiryNotificationPayload) {
     payload.address,
   ].filter(Boolean)
 
-  return parts.join(' • ').slice(0, 480)
+  return parts.join(' - ').slice(0, 480)
 }
 
 async function sendSendGridEmail({
@@ -81,7 +81,7 @@ async function sendSendGridEmail({
 }: {
   toEmail: string
   fromEmail: string
-  fromName?: string
+  fromName: string
   subject: string
   text: string
 }) {
@@ -217,3 +217,5 @@ export async function sendInquiryNotifications(
     }
   }
 }
+
+
