@@ -3,11 +3,12 @@
 A Next.js 16 (App Router) + Supabase + Google Maps CRM for lawn care businesses with customer management, route optimization, analytics, invoices, and a public inquiry form.
 
 ## Highlights
-- Customer management with table and map views, filters, and CSV/Sheets import
-- Route planning, scheduling, and service history tracking
-- Public inquiry form with rate limiting, optional reCAPTCHA, and notifications
+- Customer management with table/map views, filters, and CSV/Sheets import/export
+- Route planning, scheduling, and Google Directions optimization with service history
+- Public inquiry form with rate limiting, optional reCAPTCHA, and email/SMS notifications
 - Invoices, line items, and Stripe checkout with webhook payment capture
-- Google Sheets integration with Supabase Vault token storage
+- Analytics dashboards with KPI exports and admin audit logs
+- Google Sheets OAuth integration with Supabase Vault token storage
 
 ## Connection Health
 Legend: ![green](https://img.shields.io/badge/health-green) configured, ![red](https://img.shields.io/badge/health-red) missing/disabled. Update per environment.
@@ -37,7 +38,7 @@ Legend: ![green](https://img.shields.io/badge/health-green) configured, ![red](h
    ```bash
    cp .env.example .env.local
    ```
-   Fill in the required Supabase values (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) and set `NEXT_PUBLIC_APP_URL`. `SUPABASE_SERVICE_ROLE_KEY` is required for public inquiry rate limiting and Stripe webhooks.
+   Fill in the required Supabase values (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) and set `NEXT_PUBLIC_APP_URL`. Add Google Maps keys for routing/map views. `SUPABASE_SERVICE_ROLE_KEY` is required for public inquiry rate limiting, scripts, and Stripe webhooks.
 
 3. Set up Supabase and apply migrations:
    ```bash
@@ -53,7 +54,7 @@ Legend: ![green](https://img.shields.io/badge/health-green) configured, ![red](h
    npm run dev
    ```
 
-## Integrations Setup (Invoices + Google Sheets)
+## Integrations Setup
 
 1. Apply the latest Supabase migrations:
    ```bash
@@ -61,16 +62,28 @@ Legend: ![green](https://img.shields.io/badge/health-green) configured, ![red](h
    ```
    This creates the `invoices`, `invoice_line_items`, `payments`, and `google_sheets_connections` tables.
 
-2. Add required environment variables (local example):
+2. Add required environment variables (local example, include the integrations you plan to use):
    ```bash
    NEXT_PUBLIC_APP_URL=http://localhost:3000
    SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+   GOOGLE_MAPS_SERVER_API_KEY=your_google_maps_server_key
+   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_browser_key
    STRIPE_SECRET_KEY=your_stripe_secret_key
    STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
    GOOGLE_CLIENT_ID=your_google_oauth_client_id
    GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
    GOOGLE_SHEETS_REDIRECT_URI=http://localhost:3000/api/google-sheets/callback
+   NEXT_PUBLIC_RECAPTCHA_SITE_KEY=your_recaptcha_site_key
+   RECAPTCHA_SECRET_KEY=your_recaptcha_secret_key
+   INQUIRY_NOTIFICATION_EMAIL=ops@example.com
+   SENDGRID_API_KEY=your_sendgrid_api_key
+   SENDGRID_FROM_EMAIL=notifications@example.com
+   SENDGRID_FROM_NAME=Lawn Care CRM
+   INQUIRY_NOTIFICATION_PHONE=+15551234567
+   TWILIO_ACCOUNT_SID=your_twilio_account_sid
+   TWILIO_AUTH_TOKEN=your_twilio_auth_token
+   TWILIO_FROM_NUMBER=+15557654321
    ```
    Use your deployed URL for `NEXT_PUBLIC_APP_URL` and the Google Sheets redirect URI in production.
    The service role key is required to accept inquiries and to record Stripe webhook payments.
@@ -85,6 +98,10 @@ Legend: ![green](https://img.shields.io/badge/health-green) configured, ![red](h
 4. Configure Stripe webhooks:
    - Add an endpoint in Stripe: `https://<your-domain>/api/stripe/webhook` (local: `http://localhost:3000/api/stripe/webhook`).
    - Subscribe to `checkout.session.completed` and `payment_intent.succeeded` events.
+
+5. Optional: configure reCAPTCHA and notification providers:
+   - reCAPTCHA: set site and secret keys, and tune `RECAPTCHA_MIN_SCORE` if using v3.
+   - SendGrid/Twilio: set the notification targets and provider credentials.
 
 Stripe checkout sessions are created from the invoice detail page. Successful webhook events create `payments` records and update invoice totals/status. Manual payment entry is still available.
 
@@ -115,6 +132,7 @@ Stripe checkout sessions are created from the invoice detail page. Successful we
 - `METRICS.md` - KPI definitions and targets
 - `UAT_CHECKLIST.md` - acceptance test checklist
 - `HANDOFF.md` - operations handoff guide
+- `ISSUES.md` - SOW milestone issue checklist
 - `supabase/migrations/` - database schema + RLS policies
 
 ## Row Level Security (RLS)
@@ -132,13 +150,15 @@ Stripe checkout sessions are created from the invoice detail page. Successful we
 - `npm run typecheck` - TypeScript typecheck
 - `npm run test` - run test suite
 - `npm run test:watch` - watch test suite
+- `npm run test:e2e` - Playwright E2E tests
+- `npm run test:e2e:screenshots` - capture UI screenshots (desktop + mobile)
 - `npm run seed` - seed demo data
 - `npm run geocode` - geocode customers (scripted)
 - `npm run generate-routes` - generate demo routes (scripted)
 
 ## Testing
 
-Smoke tests live in `tests/` and cover API routes plus the login UI. Run `npm run test` (or `npm run test:watch`) during development.
+Vitest covers API routes and UI smoke tests in `tests/`. Playwright E2E runs the main UI flows and captures desktop/mobile screenshots in `tests/e2e/screenshots`. Run `npm run test` and `npm run test:e2e` (or `npm run test:e2e:screenshots` for UI captures) during development.
 
 ## Deployment
 
