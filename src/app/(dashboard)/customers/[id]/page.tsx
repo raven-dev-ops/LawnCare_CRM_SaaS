@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { CustomerDetailActions } from '@/components/customers/CustomerDetailActions'
 import { ServiceHistoryPanel } from '@/components/customers/ServiceHistoryPanel'
 import { CustomerServicePlansPanel } from '@/components/customers/CustomerServicePlansPanel'
+import { CustomerNotesPanel } from '@/components/customers/CustomerNotesPanel'
 import { Calendar, MapPin, Ruler } from 'lucide-react'
 
 const DAY_COLORS: Record<string, string> = {
@@ -114,6 +115,12 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
     .select('id, name, base_cost')
     .eq('active', true)
     .order('name')
+
+  const { data: customerNotes } = await supabase
+    .from('customer_notes')
+    .select('id, customer_id, channel, message, created_by, created_at')
+    .eq('customer_id', id)
+    .order('created_at', { ascending: false })
 
   const dayLabel = customerRecord.day || 'Unscheduled'
   const dayBadgeClass = DAY_COLORS[dayLabel] || 'bg-slate-100 text-slate-700'
@@ -272,17 +279,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Notes</CardTitle>
-            <CardDescription>Customer-specific notes</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Notes will appear here once saved for this customer.
-            </p>
-          </CardContent>
-        </Card>
+        <CustomerNotesPanel customerId={customerRecord.id} notes={customerNotes || []} />
 
         <CustomerServicePlansPanel
           customerId={customerRecord.id}

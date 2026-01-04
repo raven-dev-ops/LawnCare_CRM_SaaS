@@ -20,6 +20,7 @@ import {
   LogIn,
   LogOut,
   Wrench,
+  ClipboardList,
   X,
 } from 'lucide-react'
 
@@ -33,6 +34,7 @@ const navigation = [
   { name: 'Invoices', href: '/invoices', icon: Receipt },
   { name: 'Inquiries', href: '/inquiries', icon: Inbox },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Audit Logs', href: '/audit-logs', icon: ClipboardList, requiresAdmin: true },
   { name: 'Settings', href: '/settings', icon: Settings, requiresAdmin: true },
 ]
 

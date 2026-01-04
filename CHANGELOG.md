@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Supabase Vault-backed Google Sheets token storage and secure RPC helpers
 - Stripe webhook endpoint to auto-record payments and update invoices
 - Vitest + Testing Library smoke tests (API + login flow)
+- Customer notes and communication log
+- Audit logs with admin view and logging helpers
+- Analytics CSV exports and KPI target display
+- Deployment, monitoring, handoff, and validation runbooks
 
 ### Changed
 

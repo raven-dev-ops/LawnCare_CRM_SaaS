@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { getShopLocation } from '@/lib/settings'
 import { haversineMilesKm } from '@/lib/geo'
 import { geocodeAddress } from '@/lib/geocoding'
+import { logAuditEvent } from '@/lib/audit'
 import { z } from 'zod'
 
 interface CreateCustomerInput {
@@ -128,6 +129,13 @@ export async function createCustomer(input: CreateCustomerInput) {
       return { error: 'Failed to create customer: ' + error.message }
     }
 
+    await logAuditEvent(supabase, {
+      action: 'create',
+      entityType: 'customer',
+      entityId: data.id,
+      afterData: data,
+    })
+
     revalidatePath('/customers')
     return { success: true, customer: data, geocodeFailed }
   } catch (error) {
@@ -144,7 +152,7 @@ export async function updateCustomer(input: UpdateCustomerInput) {
     // Get existing customer to check if address changed
     const { data: existing } = await supabase
       .from('customers')
-      .select('address')
+      .select('*')
       .eq('id', input.id)
       .single()
 
@@ -215,6 +223,14 @@ export async function updateCustomer(input: UpdateCustomerInput) {
       return { error: 'Failed to update customer: ' + error.message }
     }
 
+    await logAuditEvent(supabase, {
+      action: 'update',
+      entityType: 'customer',
+      entityId: data.id,
+      beforeData: existing ?? null,
+      afterData: data,
+    })
+
     revalidatePath('/customers')
     return { success: true, customer: data, geocodeFailed }
   } catch (error) {
@@ -232,6 +248,12 @@ export async function deleteCustomer(customerId: string) {
   }
 
   try {
+    const { data: existing } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('id', customerId)
+      .single()
+
     // Check if customer is in any routes
     const { data: routeStops, error: routeCheckError } = await supabase
       .from('route_stops')
@@ -255,6 +277,14 @@ export async function deleteCustomer(customerId: string) {
       return { error: 'Failed to delete customer: ' + deleteError.message }
     }
 
+    await logAuditEvent(supabase, {
+      action: 'delete',
+      entityType: 'customer',
+      entityId: customerId,
+      beforeData: existing ?? null,
+      afterData: null,
+    })
+
     revalidatePath('/customers')
     return {
       success: true,
@@ -271,15 +301,31 @@ export async function archiveCustomer(customerId: string) {
   const supabase = await createClient()
 
   try {
-    const { error } = await supabase
+    const { data: existing } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('id', customerId)
+      .single()
+
+    const { data, error } = await supabase
       .from('customers')
       .update({ archived_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq('id', customerId)
+      .select()
+      .single()
 
     if (error) {
       console.error('Archive customer error:', error)
       return { error: 'Failed to archive customer: ' + error.message }
     }
+
+    await logAuditEvent(supabase, {
+      action: 'archive',
+      entityType: 'customer',
+      entityId: customerId,
+      beforeData: existing ?? null,
+      afterData: data ?? null,
+    })
 
     revalidatePath('/customers')
     revalidatePath('/routes')
@@ -296,15 +342,31 @@ export async function restoreCustomer(customerId: string) {
   const supabase = await createClient()
 
   try {
-    const { error } = await supabase
+    const { data: existing } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('id', customerId)
+      .single()
+
+    const { data, error } = await supabase
       .from('customers')
       .update({ archived_at: null, updated_at: new Date().toISOString() })
       .eq('id', customerId)
+      .select()
+      .single()
 
     if (error) {
       console.error('Restore customer error:', error)
       return { error: 'Failed to restore customer: ' + error.message }
     }
+
+    await logAuditEvent(supabase, {
+      action: 'restore',
+      entityType: 'customer',
+      entityId: customerId,
+      beforeData: existing ?? null,
+      afterData: data ?? null,
+    })
 
     revalidatePath('/customers')
     revalidatePath('/routes')
@@ -414,6 +476,13 @@ export async function bulkUpdateCustomers(input: BulkUpdateCustomersInput) {
       console.error('Bulk update customers error:', error)
       return { error: 'Failed to update customers: ' + error.message }
     }
+
+    await logAuditEvent(supabase, {
+      action: 'bulk_update',
+      entityType: 'customer',
+      entityId: null,
+      afterData: { ids: input.ids, updates: updateData },
+    })
 
     revalidatePath('/customers')
     revalidatePath('/routes')
@@ -557,6 +626,18 @@ export async function importCustomers(input: {
     console.error('Import failed:', error)
     return { error: 'Failed to import customers.' }
   }
+
+  await logAuditEvent(supabase, {
+    action: 'import',
+    entityType: 'customer',
+    entityId: null,
+    afterData: {
+      importedCount: insertRows.length,
+      duplicateCount,
+      errorCount: rowErrors.length,
+      totalCount: rows.length,
+    },
+  })
 
   revalidatePath('/customers')
 

@@ -86,6 +86,19 @@ Stripe webhook endpoint for payment updates.
 ### Requirements
 - `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` must be set.
 
+## GET /api/analytics/export
+
+Exports analytics data as CSV. Admin access required.
+
+### Query Params
+- `type`: `kpis` (default), `route-stats`, or `service-history`
+- `start`: `YYYY-MM-DD` (optional date filter)
+- `end`: `YYYY-MM-DD` (optional date filter)
+
+### Responses
+- `200` CSV download
+- `403` admin access required
+
 ## Notes
 
 - API routes run on the server and can use the service role key.

@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/playwright-report
+/test-results
 
 # next.js
 /.next/
@@ -47,3 +49,6 @@ next-env.d.ts
 # temp scripts
 /tmp*.py
 /tmp*.js
+
+# docs for client
+/acceptance

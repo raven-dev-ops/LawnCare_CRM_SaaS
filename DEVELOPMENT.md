@@ -53,7 +53,7 @@
    npx supabase --version
 
    # Link to your project
-   npx supabase link --project-ref saxtqposxmdxbcmpc
+   npx supabase link --project-ref <project-ref>
 
    # Push migrations
    npx supabase db push
@@ -136,6 +136,8 @@ npm run lint         # Run ESLint
 npm run typecheck    # TypeScript typecheck
 npm run test         # Run test suite
 npm run test:watch   # Watch test suite
+npm run test:e2e     # Run Playwright E2E tests
+npm run test:e2e:screenshots  # Capture UI screenshots via Playwright
 npm run seed         # Seed database from CSV
 npm run geocode      # Geocode customers with Google Maps API
 npm run generate-routes  # Generate demo routes with optimization
@@ -166,6 +168,7 @@ Additional scripts:
 - Rate limiting and notifications (email/SMS optional)
 - Invoices, line items, and payments
 - Stripe checkout + webhook to record payments
+- Admin audit logs for key CRM actions
 
 ## Key Technologies
 
@@ -206,7 +209,7 @@ TWILIO_AUTH_TOKEN=
 TWILIO_FROM_NUMBER=
 ```
 
-Note: `SUPABASE_SERVICE_ROLE_KEY` is required for public inquiry submissions, Stripe webhook processing, and scripts. You can set `SUPABASE_AUTH_DISABLED=true` to bypass auth checks while running UI smoke tests or local demos without a Supabase instance.
+Note: `SUPABASE_SERVICE_ROLE_KEY` is required for public inquiry submissions, Stripe webhook processing, and scripts. You can set `SUPABASE_AUTH_DISABLED=true` and `NEXT_PUBLIC_SUPABASE_AUTH_DISABLED=true` to bypass auth checks while running UI smoke tests or local demos without a Supabase instance.
 
 ## Auth Setup (Supabase)
 
@@ -257,6 +260,7 @@ Using the anon key, confirm these reads are denied:
 
 - `npm run lint` and `npm run typecheck` run ESLint and TypeScript checks.
 - `npm run test` runs Vitest smoke tests for API routes and critical UI flows.
+- `npm run test:e2e` runs Playwright UI checks; `npm run test:e2e:screenshots` captures updated UI screenshots in `tests/e2e/screenshots/<project>`.
 - CI runs lint, typecheck, test, and build on every PR.
 
 ## Troubleshooting

@@ -3,6 +3,7 @@
 import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { logAuditEvent } from '@/lib/audit'
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY || ''
 const stripe = stripeSecretKey
@@ -134,6 +135,13 @@ export async function createInvoice(input: CreateInvoiceInput) {
     return { error: 'Failed to save invoice items.' }
   }
 
+  await logAuditEvent(supabase, {
+    action: 'create',
+    entityType: 'invoice',
+    entityId: invoice.id,
+    afterData: { invoice, lineItems },
+  })
+
   revalidatePath('/invoices')
   revalidatePath(`/invoices/${invoice.id}`)
   return { invoice }
@@ -141,6 +149,12 @@ export async function createInvoice(input: CreateInvoiceInput) {
 
 export async function updateInvoiceStatus(input: UpdateInvoiceStatusInput) {
   const supabase = await createClient()
+
+  const { data: before } = await supabase
+    .from('invoices')
+    .select('*')
+    .eq('id', input.invoiceId)
+    .maybeSingle()
 
   const { data: invoice, error } = await supabase
     .from('invoices')
@@ -153,6 +167,14 @@ export async function updateInvoiceStatus(input: UpdateInvoiceStatusInput) {
     console.error('Update invoice status error:', error)
     return { error: 'Failed to update invoice status.' }
   }
+
+  await logAuditEvent(supabase, {
+    action: 'status_change',
+    entityType: 'invoice',
+    entityId: input.invoiceId,
+    beforeData: before ?? null,
+    afterData: invoice ?? null,
+  })
 
   revalidatePath('/invoices')
   revalidatePath(`/invoices/${input.invoiceId}`)
@@ -200,6 +222,13 @@ export async function recordPayment(input: RecordPaymentInput) {
     return { error: 'Failed to record payment.' }
   }
 
+  await logAuditEvent(supabase, {
+    action: 'create',
+    entityType: 'payment',
+    entityId: payment.id,
+    afterData: payment,
+  })
+
   let updatedInvoice = invoice
 
   if ((input.status || 'succeeded') === 'succeeded') {
@@ -227,6 +256,14 @@ export async function recordPayment(input: RecordPaymentInput) {
       console.error('Update invoice after payment error:', updateError)
     } else if (updated) {
       updatedInvoice = updated
+
+      await logAuditEvent(supabase, {
+        action: 'update',
+        entityType: 'invoice',
+        entityId: updatedInvoice.id,
+        beforeData: invoice,
+        afterData: updatedInvoice,
+      })
     }
   }
 
@@ -363,6 +400,14 @@ export async function createStripeCheckoutSession(input: CreateStripeCheckoutInp
 
   if (updateError) {
     console.error('Stripe checkout invoice update error:', updateError)
+  } else {
+    await logAuditEvent(supabase, {
+      action: 'stripe_checkout',
+      entityType: 'invoice',
+      entityId: invoice.id,
+      beforeData: invoice,
+      afterData: { ...invoice, ...updates },
+    })
   }
 
   revalidatePath('/invoices')
