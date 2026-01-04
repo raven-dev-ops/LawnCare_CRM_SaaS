@@ -42,11 +42,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${redirectBase}?googleSheets=admin_required`)
   }
 
-  const { data: existing } = await supabase
-    .from('google_sheets_connections')
-    .select('refresh_token')
-    .eq('singleton', true)
-    .maybeSingle()
+  const { data: existingTokens, error: tokensError } = await supabase
+    .rpc('get_google_sheets_tokens')
+
+  if (tokensError) {
+    console.error('Google Sheets token fetch error:', tokensError)
+  }
+
+  const existing = Array.isArray(existingTokens) ? existingTokens[0] : existingTokens
 
   try {
     const { tokens } = await oauthClient.getToken(code)
@@ -54,18 +57,13 @@ export async function GET(request: NextRequest) {
     const expiryDate = tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null
 
     const { error: upsertError } = await supabase
-      .from('google_sheets_connections')
-      .upsert(
-        {
-          singleton: true,
-          access_token: tokens.access_token || null,
-          refresh_token: refreshToken,
-          scope: tokens.scope || null,
-          token_type: tokens.token_type || null,
-          expiry_date: expiryDate,
-        },
-        { onConflict: 'singleton' }
-      )
+      .rpc('store_google_sheets_tokens', {
+        access_token: tokens.access_token || null,
+        refresh_token: refreshToken,
+        scope: tokens.scope || null,
+        token_type: tokens.token_type || null,
+        expiry_date: expiryDate,
+      })
 
     if (upsertError) {
       console.error('Google Sheets token upsert error:', upsertError)
