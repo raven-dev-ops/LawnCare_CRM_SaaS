@@ -417,9 +417,9 @@ export function CustomersTable({
                               variant="outline"
                               className="mt-1 text-xs border-emerald-500 text-emerald-700"
                             >
-                              <a href="/inquiries" className="hover:underline">
+                              <Link href="/inquiries" className="hover:underline">
                                 From Inquiry
-                              </a>
+                              </Link>
                             </Badge>
                           )}
                         </TableCell>

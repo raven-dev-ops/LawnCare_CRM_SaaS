@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -33,6 +34,7 @@ import { toast } from 'sonner'
 import type { Customer } from '@/types/database.types'
 import { buildCsv, buildCustomerExportRows, CUSTOMER_EXPORT_HEADERS } from '@/lib/customers-csv'
 import { importCustomers } from '@/app/(dashboard)/customers/actions'
+import { getGoogleSheetsAuthUrl, fetchGoogleSheetPreview, disconnectGoogleSheets } from '@/app/(dashboard)/customers/google-sheets/actions'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -75,6 +77,10 @@ const IMPORT_FIELDS = [
 
 type ImportFieldKey = typeof IMPORT_FIELDS[number]['key']
 
+type Weekday = Exclude<Customer['day'], null>
+
+type ImportDay = Weekday | 'unscheduled'
+
 type ImportRow = {
   name: string
   address: string
@@ -82,7 +88,7 @@ type ImportRow = {
   email?: string | null
   type?: 'Residential' | 'Commercial' | 'Workshop'
   cost?: number
-  day?: string | null
+  day?: ImportDay | null
   route_order?: number | null
   distance_from_shop_km?: number | null
   distance_from_shop_miles?: number | null
@@ -104,6 +110,7 @@ type CustomersImportExportDialogProps = {
   onOpenChange: (open: boolean) => void
   customers: Customer[]
   isAdmin: boolean
+  googleSheetsConnected?: boolean
 }
 
 function normalizeHeader(value: string) {
@@ -112,6 +119,13 @@ function normalizeHeader(value: string) {
 
 function normalizeKey(name: string, address: string) {
   return `${name}`.toLowerCase().replace(/\s+/g, '') + '|' + `${address}`.toLowerCase().replace(/\s+/g, '')
+}
+
+function extractSpreadsheetId(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+  const match = trimmed.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)
+  return match ? match[1] : trimmed
 }
 
 function parseCsv(content: string) {
@@ -187,6 +201,7 @@ export function CustomersImportExportDialog({
   onOpenChange,
   customers,
   isAdmin,
+  googleSheetsConnected,
 }: CustomersImportExportDialogProps) {
   const router = useRouter()
   const [headers, setHeaders] = useState<string[]>([])
@@ -197,6 +212,12 @@ export function CustomersImportExportDialog({
   )
   const [skipDuplicates, setSkipDuplicates] = useState(true)
   const [isImporting, setIsImporting] = useState(false)
+  const [sheetUrl, setSheetUrl] = useState('')
+  const [sheetName, setSheetName] = useState('')
+  const [loadedSheetName, setLoadedSheetName] = useState<string | null>(null)
+  const [isConnecting, setIsConnecting] = useState(false)
+  const [isDisconnecting, setIsDisconnecting] = useState(false)
+  const [isLoadingSheet, setIsLoadingSheet] = useState(false)
 
   const existingKeys = useMemo(() => {
     const keys = new Set<string>()
@@ -216,8 +237,8 @@ export function CustomersImportExportDialog({
     if (!rows.length) return []
 
     const seenKeys = new Set<string>()
-    const dayOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Unscheduled']
-    const typeOptions = ['Residential', 'Commercial', 'Workshop']
+    const dayOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Unscheduled'] as const
+    const typeOptions = ['Residential', 'Commercial', 'Workshop'] as const
 
     return rows.map((row, index) => {
       const errors: string[] = []
@@ -301,8 +322,8 @@ export function CustomersImportExportDialog({
         email: emailRaw || null,
         type: normalizedType ?? undefined,
         cost: cost ?? undefined,
-        day: !isWorkshopDay && normalizedDay && normalizedDay.toLowerCase() !== 'unscheduled'
-          ? normalizedDay
+        day: !isWorkshopDay && normalizedDay && normalizedDay !== 'Unscheduled'
+          ? (normalizedDay as Weekday)
           : null,
         route_order: routeOrder == null ? null : Math.round(routeOrder),
         distance_from_shop_km: distanceKm,
@@ -356,16 +377,82 @@ export function CustomersImportExportDialog({
     URL.revokeObjectURL(url)
   }
 
+  const applyImportData = (nextHeaders: string[], nextRows: string[][], name: string) => {
+    setHeaders(nextHeaders)
+    setRows(nextRows)
+    setFileName(name)
+    setMapping(buildInitialMapping(nextHeaders))
+  }
+
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
     const content = await file.text()
     const parsed = parseCsv(content)
-    setHeaders(parsed.headers)
-    setRows(parsed.rows)
-    setFileName(file.name)
-    setMapping(buildInitialMapping(parsed.headers))
+    applyImportData(parsed.headers, parsed.rows, file.name)
+  }
+
+  const handleGoogleConnect = async () => {
+    if (!isAdmin) {
+      toast.error('Admin access required.')
+      return
+    }
+
+    setIsConnecting(true)
+    const result = await getGoogleSheetsAuthUrl()
+    setIsConnecting(false)
+
+    if (result?.error || !result?.url) {
+      toast.error(result?.error || 'Unable to start Google OAuth.')
+      return
+    }
+
+    window.location.assign(result.url)
+  }
+
+  const handleGoogleDisconnect = async () => {
+    setIsDisconnecting(true)
+    const result = await disconnectGoogleSheets()
+    setIsDisconnecting(false)
+
+    if (result?.error) {
+      toast.error(result.error)
+      return
+    }
+
+    toast.success('Google Sheets disconnected.')
+    setLoadedSheetName(null)
+    router.refresh()
+  }
+
+  const handleLoadGoogleSheet = async () => {
+    const spreadsheetId = extractSpreadsheetId(sheetUrl)
+    if (!spreadsheetId) {
+      toast.error('Enter a Google Sheets URL or ID.')
+      return
+    }
+
+    if (!googleSheetsConnected) {
+      toast.error('Connect Google Sheets first.')
+      return
+    }
+
+    setIsLoadingSheet(true)
+    const result = await fetchGoogleSheetPreview({
+      spreadsheetId,
+      sheetName: sheetName || null,
+    })
+    setIsLoadingSheet(false)
+
+    if (result?.error) {
+      toast.error(result.error)
+      return
+    }
+
+    applyImportData(result.headers || [], result.rows || [], `Google Sheets: ${result.sheetName || spreadsheetId}`)
+    setLoadedSheetName(result.sheetName || spreadsheetId)
+    toast.success('Sheet data loaded. Switch to Import to map fields.')
   }
 
   const handleImport = async (dryRun: boolean) => {
@@ -416,6 +503,9 @@ export function CustomersImportExportDialog({
       setFileName('')
       setMapping(buildInitialMapping([]))
       setSkipDuplicates(true)
+      setSheetUrl('')
+      setSheetName('')
+      setLoadedSheetName(null)
     }
   }
 
@@ -433,6 +523,7 @@ export function CustomersImportExportDialog({
           <TabsList>
             <TabsTrigger value="export">Export</TabsTrigger>
             {isAdmin ? <TabsTrigger value="import">Import</TabsTrigger> : null}
+            {isAdmin ? <TabsTrigger value="google">Google Sheets</TabsTrigger> : null}
           </TabsList>
 
           <TabsContent value="export" className="space-y-4">
@@ -575,6 +666,72 @@ export function CustomersImportExportDialog({
                   </div>
                 </div>
               ) : null}
+            </TabsContent>
+          ) : null}
+          {isAdmin ? (
+            <TabsContent value="google" className="space-y-6">
+              <div className="rounded-lg border bg-slate-50 p-4 text-sm text-muted-foreground">
+                Connect Google Sheets to pull a sheet and reuse the import mapping.
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge
+                  variant="secondary"
+                  className={googleSheetsConnected ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}
+                >
+                  {googleSheetsConnected ? 'Connected' : 'Not connected'}
+                </Badge>
+                <Button
+                  variant="outline"
+                  onClick={handleGoogleConnect}
+                  disabled={isConnecting}
+                >
+                  {isConnecting ? 'Connecting...' : googleSheetsConnected ? 'Reconnect' : 'Connect Google Sheets'}
+                </Button>
+                {googleSheetsConnected ? (
+                  <Button
+                    variant="outline"
+                    onClick={handleGoogleDisconnect}
+                    disabled={isDisconnecting}
+                  >
+                    {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
+                  </Button>
+                ) : null}
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Spreadsheet URL or ID</Label>
+                  <Input
+                    value={sheetUrl}
+                    onChange={(event) => setSheetUrl(event.target.value)}
+                    placeholder="https://docs.google.com/spreadsheets/d/..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Sheet name (optional)</Label>
+                  <Input
+                    value={sheetName}
+                    onChange={(event) => setSheetName(event.target.value)}
+                    placeholder="Sheet1"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  onClick={handleLoadGoogleSheet}
+                  disabled={!googleSheetsConnected || isLoadingSheet}
+                >
+                  {isLoadingSheet ? 'Loading...' : 'Load sheet'}
+                </Button>
+                {loadedSheetName ? (
+                  <span className="text-xs text-muted-foreground">Loaded: {loadedSheetName}</span>
+                ) : null}
+              </div>
+
+              <div className="rounded-lg border bg-slate-50 p-4 text-sm text-muted-foreground">
+                After loading, switch to Import to map fields and run a dry run.
+              </div>
             </TabsContent>
           ) : null}
         </Tabs>

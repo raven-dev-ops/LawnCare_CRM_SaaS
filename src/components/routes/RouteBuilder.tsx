@@ -35,7 +35,7 @@ import { cn } from '@/lib/utils'
 import { createRoute } from '@/app/(dashboard)/routes/actions'
 import { GOOGLE_MAPS_BROWSER_API_KEY } from '@/lib/config'
 import { haversineMiles } from '@/lib/geo'
-import { optimizeRouteNearestNeighbor } from '@/lib/routes'
+import { GOOGLE_DIRECTIONS_MAX_WAYPOINTS, optimizeRouteNearestNeighbor } from '@/lib/routes'
 import { RoutePolyline } from './RoutePolyline'
 import { toast } from 'sonner'
 
@@ -61,6 +61,7 @@ interface Customer {
 interface RouteBuilderProps {
   customers: Customer[]
   shopLocation: ShopLocation
+  crewMembers: Array<{ id: string; name: string; active?: boolean }>
 }
 
 const DAYS_OF_WEEK = [
@@ -73,7 +74,7 @@ const DAYS_OF_WEEK = [
   'Sunday',
 ]
 
-export function RouteBuilder({ customers, shopLocation }: RouteBuilderProps) {
+export function RouteBuilder({ customers, shopLocation, crewMembers }: RouteBuilderProps) {
   const apiKey = GOOGLE_MAPS_BROWSER_API_KEY
   const router = useRouter()
 
@@ -82,6 +83,7 @@ export function RouteBuilder({ customers, shopLocation }: RouteBuilderProps) {
   const [selectedCustomers, setSelectedCustomers] = useState<Customer[]>([])
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [routeName, setRouteName] = useState('')
+  const [selectedDriverId, setSelectedDriverId] = useState('unassigned')
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [orderLocked, setOrderLocked] = useState(false)
@@ -184,12 +186,11 @@ export function RouteBuilder({ customers, shopLocation }: RouteBuilderProps) {
       return
     }
 
-    const maxWaypoints = 23
-    if (customersWithCoords.length > maxWaypoints) {
+    if (customersWithCoords.length > GOOGLE_DIRECTIONS_MAX_WAYPOINTS) {
       setDirectionsResult(null)
       setDirectionsMetrics(null)
       setDirectionsStatus('fallback')
-      setDirectionsMessage('Route preview uses estimates because Directions API supports up to 23 stops.')
+      setDirectionsMessage(`Route preview uses estimates because Directions API supports up to ${GOOGLE_DIRECTIONS_MAX_WAYPOINTS} stops. Saved routes use chunked optimization.`)
       return
     }
 
@@ -331,12 +332,16 @@ export function RouteBuilder({ customers, shopLocation }: RouteBuilderProps) {
         day_of_week: selectedDay,
         date: targetDate.toISOString().split('T')[0],
         customers: selectedCustomers.map((c) => ({ id: c.id })),
+        driverId: selectedDriverId === 'unassigned' ? null : selectedDriverId,
       })
 
       if (result.error) {
         toast.error(result.error)
       } else if (result.routeId) {
         toast.success('Route created successfully')
+        if (result.warning) {
+          toast.warning(result.warning)
+        }
         router.push(`/routes/${result.routeId}`)
       }
     } catch (error) {
@@ -385,6 +390,27 @@ export function RouteBuilder({ customers, shopLocation }: RouteBuilderProps) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <Label>Assigned Driver</Label>
+              {crewMembers.length > 0 ? (
+                <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {crewMembers.map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name}{member.active == false ? ' (inactive)' : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="text-sm text-muted-foreground">No crew members yet.</div>
+              )}
             </div>
 
             <div>

@@ -34,6 +34,12 @@ export default async function RouteDetailPage({ params }: { params: Promise<{ id
     )
     .is('archived_at', null)
 
+  const { data: crewMembers } = await supabase
+    .from('crew_members')
+    .select('id, name, active')
+    .eq('active', true)
+    .order('name')
+
   const { data: completedRoutes } = await supabase
     .from('route_times')
     .select('duration_minutes')
@@ -54,8 +60,9 @@ export default async function RouteDetailPage({ params }: { params: Promise<{ id
     <RouteDetailView
       route={route}
       customers={customers || []}
-      avgCompletedMinutes={avgCompletedMinutes}
+      avgCompletedMinutes={avgCompletedMinutes ?? undefined}
       shopLocation={shopLocation}
+      crewMembers={crewMembers || []}
     />
   )
 }

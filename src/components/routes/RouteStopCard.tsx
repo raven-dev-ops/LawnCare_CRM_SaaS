@@ -22,21 +22,25 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Check, X, SkipForward, MapPin } from 'lucide-react'
+import { Check, X, SkipForward, MapPin, Navigation, Phone } from 'lucide-react'
 import { updateRouteStop } from '@/app/(dashboard)/routes/actions'
 import { ServiceHistoryDialog } from '@/components/customers/ServiceHistoryDialog'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 
-interface Customer {
+export interface Customer {
   id?: string
   name?: string
   address?: string
+  phone?: string | null
+  latitude?: number | null
+  longitude?: number | null
   cost?: number
+  additional_work_cost?: number | null
   has_additional_work?: boolean
 }
 
-interface RouteStop {
+export interface RouteStop {
   id: string
   status: string
   service_notes?: string
@@ -49,6 +53,26 @@ interface RouteStopCardProps {
   index: number
   isExecuting: boolean
   onStatusChange?: (stopId: string, status: string, updates?: Partial<RouteStop>) => void
+}
+
+const PHONE_MIN_DIGITS = 7
+
+function getPhoneHref(value: string | null | undefined) {
+  if (!value) return null
+  const cleaned = value.replace(/[^\d+]/g, '')
+  const digits = cleaned.replace(/\D/g, '')
+  if (digits.length < PHONE_MIN_DIGITS) return null
+  return `tel:${cleaned}`
+}
+
+function getNavigationHref(customer: Customer) {
+  if (customer.latitude != null && customer.longitude != null) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${customer.latitude},${customer.longitude}`
+  }
+  if (customer.address) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(customer.address)}`
+  }
+  return null
 }
 
 const SKIP_REASONS = [
@@ -73,6 +97,8 @@ export function RouteStopCard({ stop, index, isExecuting, onStatusChange }: Rout
   const isCompleted = stop.status === 'completed'
   const isSkipped = stop.status === 'skipped'
   const isPending = stop.status === 'pending'
+  const phoneHref = getPhoneHref(stop.customer.phone)
+  const navigationHref = getNavigationHref(stop.customer)
 
   const handleComplete = async () => {
     setIsUpdating(true)
@@ -157,8 +183,8 @@ export function RouteStopCard({ stop, index, isExecuting, onStatusChange }: Rout
             : 'border-gray-200'
         }`}
       >
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
           <div
             className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
               isCompleted
@@ -201,6 +227,37 @@ export function RouteStopCard({ stop, index, isExecuting, onStatusChange }: Rout
               )}
             </div>
 
+            {(phoneHref || navigationHref) && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {phoneHref ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-10 text-sm sm:h-8 sm:text-xs"
+                    asChild
+                  >
+                    <a href={phoneHref}>
+                      <Phone className="h-3 w-3 mr-1" />
+                      Call
+                    </a>
+                  </Button>
+                ) : null}
+                {navigationHref ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-10 text-sm sm:h-8 sm:text-xs"
+                    asChild
+                  >
+                    <a href={navigationHref} target="_blank" rel="noopener noreferrer">
+                      <Navigation className="h-3 w-3 mr-1" />
+                      Navigate
+                    </a>
+                  </Button>
+                ) : null}
+              </div>
+            )}
+
             {(isCompleted && stop.service_notes) && (
               <div className="mt-2 text-xs text-muted-foreground bg-white p-2 rounded border">
                 <strong>Notes:</strong> {stop.service_notes}
@@ -216,12 +273,12 @@ export function RouteStopCard({ stop, index, isExecuting, onStatusChange }: Rout
             {isExecuting && isPending && (
               <>
                 {!isExpanded ? (
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex flex-col gap-2 mt-3 sm:flex-row">
                     <Button
                       size="sm"
                       onClick={handleComplete}
                       disabled={isUpdating}
-                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-xs h-8"
+                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-sm h-10 sm:h-8 sm:text-xs"
                     >
                       <Check className="h-3 w-3 mr-1" />
                       Complete
@@ -230,7 +287,7 @@ export function RouteStopCard({ stop, index, isExecuting, onStatusChange }: Rout
                       size="sm"
                       variant="outline"
                       onClick={() => setIsExpanded(true)}
-                      className="flex-1 text-xs h-8"
+                      className="flex-1 text-sm h-10 sm:h-8 sm:text-xs"
                     >
                       <SkipForward className="h-3 w-3 mr-1" />
                       Skip
@@ -240,7 +297,7 @@ export function RouteStopCard({ stop, index, isExecuting, onStatusChange }: Rout
                   <div className="mt-3 space-y-2 p-3 bg-white rounded border">
                     <div className="text-xs font-medium">Skip this stop?</div>
                     <Select value={skipReason} onValueChange={setSkipReason}>
-                      <SelectTrigger className="h-8 text-xs">
+                      <SelectTrigger className="h-10 text-sm sm:h-8 sm:text-xs">
                         <SelectValue placeholder="Select reason" />
                       </SelectTrigger>
                       <SelectContent>
@@ -251,12 +308,12 @@ export function RouteStopCard({ stop, index, isExecuting, onStatusChange }: Rout
                         ))}
                       </SelectContent>
                     </Select>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row">
                       <Button
                         size="sm"
                         onClick={handleSkip}
                         disabled={!skipReason || isUpdating}
-                        className="flex-1 text-xs h-7"
+                        className="flex-1 text-sm h-9 sm:h-7 sm:text-xs"
                       >
                         Confirm Skip
                       </Button>
@@ -267,7 +324,7 @@ export function RouteStopCard({ stop, index, isExecuting, onStatusChange }: Rout
                           setIsExpanded(false)
                           setSkipReason('')
                         }}
-                        className="flex-1 text-xs h-7"
+                        className="flex-1 text-sm h-9 sm:h-7 sm:text-xs"
                       >
                         Cancel
                       </Button>
@@ -281,7 +338,7 @@ export function RouteStopCard({ stop, index, isExecuting, onStatusChange }: Rout
                       placeholder="Service notes (optional)"
                       value={serviceNotes}
                       onChange={(e) => setServiceNotes(e.target.value)}
-                      className="text-xs h-16"
+                      className="text-sm h-20 sm:h-16 sm:text-xs"
                     />
                   </div>
                 )}
@@ -294,16 +351,16 @@ export function RouteStopCard({ stop, index, isExecuting, onStatusChange }: Rout
                 variant="outline"
                 onClick={handleUndo}
                 disabled={isUpdating}
-                className="mt-3 text-xs h-7"
+                className="mt-3 text-sm h-9 sm:h-7 sm:text-xs"
               >
                 <X className="h-3 w-3 mr-1" />
                 Undo
               </Button>
             )}
           </div>
-        </div>
-      </CardContent>
-    </Card>
+          </div>
+        </CardContent>
+      </Card>
 
     {stop.customer.id && (
       <>

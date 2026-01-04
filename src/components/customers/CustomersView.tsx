@@ -40,6 +40,7 @@ interface CustomersViewProps {
   inquiryByCustomerId?: Record<string, string>
   shopLocation: ShopLocation
   initialArchiveFilter?: 'active' | 'archived' | 'all'
+  googleSheetsConnected?: boolean
 }
 
 export function CustomersView({
@@ -48,6 +49,7 @@ export function CustomersView({
   inquiryByCustomerId,
   shopLocation,
   initialArchiveFilter,
+  googleSheetsConnected,
 }: CustomersViewProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -57,7 +59,7 @@ export function CustomersView({
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [selectedDay, setSelectedDay] = useState<string>('all')
-  const [selectedType, setSelectedType] = useState<string>('all')
+  const [selectedType, setSelectedType] = useState<'all' | Customer['type']>('all')
   const [archiveFilter, setArchiveFilter] = useState<'active' | 'archived' | 'all'>(
     initialArchiveFilter ?? 'active'
   )
@@ -66,7 +68,7 @@ export function CustomersView({
   const [tableFocusedCustomerId, setTableFocusedCustomerId] = useState<string | null>(null)
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<Set<string>>(new Set())
   const [bulkDay, setBulkDay] = useState('')
-  const [bulkType, setBulkType] = useState('')
+  const [bulkType, setBulkType] = useState<Customer['type'] | ''>('')
   const [bulkAction, setBulkAction] = useState<string | null>(null)
 
   // Dialog states
@@ -495,7 +497,7 @@ export function CustomersView({
             </SelectContent>
           </Select>
 
-          <Select value={selectedType} onValueChange={setSelectedType}>
+          <Select value={selectedType} onValueChange={(value) => setSelectedType(value as 'all' | Customer['type'])}>
             <SelectTrigger className="w-[180px]">
               <Filter className="mr-2 h-4 w-4" />
               <SelectValue placeholder="Filter by type" />
@@ -662,7 +664,7 @@ export function CustomersView({
                 {bulkAction === 'day' ? 'Updating...' : 'Apply Day'}
               </Button>
 
-              <Select value={bulkType || undefined} onValueChange={setBulkType}>
+              <Select value={bulkType || undefined} onValueChange={(value) => setBulkType(value as Customer['type'] | '')}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Assign type" />
                 </SelectTrigger>
@@ -780,6 +782,7 @@ export function CustomersView({
         onOpenChange={setImportDialogOpen}
         customers={customers}
         isAdmin={isAdmin}
+        googleSheetsConnected={googleSheetsConnected}
       />
     </div>
   )

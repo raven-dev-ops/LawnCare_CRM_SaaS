@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useRole } from '@/components/auth/RoleProvider'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -21,8 +22,9 @@ import { ArrowLeft, Navigation, MapPin, Clock, DollarSign, Fuel, Play, CheckCirc
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { RoutePolyline } from './RoutePolyline'
-import { RouteStopCard } from './RouteStopCard'
-import { startRoute, completeRoute, deleteRoute, addStopToRoute } from '@/app/(dashboard)/routes/actions'
+import { GOOGLE_DIRECTIONS_MAX_WAYPOINTS } from '@/lib/routes'
+import { RouteStopCard, type Customer, type RouteStop } from './RouteStopCard'
+import { startRoute, completeRoute, deleteRoute, addStopToRoute, assignRouteDriver } from '@/app/(dashboard)/routes/actions'
 import { toast } from 'sonner'
 import { GOOGLE_MAPS_BROWSER_API_KEY } from '@/lib/config'
 
@@ -32,25 +34,6 @@ interface ShopLocation {
   address: string
 }
 
-interface Customer {
-  id: string
-  name?: string
-  address?: string
-  latitude?: number
-  longitude?: number
-  cost?: number
-  additional_work_cost?: number
-  has_additional_work?: boolean
-  additional_work_cost?: number
-}
-
-interface RouteStop {
-  id: string
-  status: string
-  service_notes?: string
-  skip_reason?: string
-  customer: Customer
-}
 
 interface Route {
   id: string
@@ -58,6 +41,8 @@ interface Route {
   day_of_week: string
   date: string
   status: string
+  driver_id?: string | null
+  driver_name?: string | null
   start_time?: string | null
   end_time?: string | null
   total_distance_miles?: number
@@ -72,9 +57,10 @@ interface RouteDetailViewProps {
   customers: Customer[]
   avgCompletedMinutes?: number
   shopLocation: ShopLocation
+  crewMembers: Array<{ id: string; name: string; active?: boolean }>
 }
 
-export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, shopLocation }: RouteDetailViewProps) {
+export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, shopLocation, crewMembers }: RouteDetailViewProps) {
   const apiKey = GOOGLE_MAPS_BROWSER_API_KEY
   const router = useRouter()
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null)
@@ -88,6 +74,17 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
   const [localStatus, setLocalStatus] = useState(route.status)
   const [localStartTime, setLocalStartTime] = useState<string | null>(route.start_time || null)
   const [isAutoCompleting, setIsAutoCompleting] = useState(false)
+  const [isUpdatingDriver, setIsUpdatingDriver] = useState(false)
+  const [selectedDriverId, setSelectedDriverId] = useState(route.driver_id ?? 'unassigned')
+
+  const shopLocationPoint = useMemo(
+    () => ({ lat: shopLocation.lat, lng: shopLocation.lng }),
+    [shopLocation.lat, shopLocation.lng]
+  )
+
+  useEffect(() => {
+    setSelectedDriverId(route.driver_id ?? 'unassigned')
+  }, [route.driver_id])
 
   const [localStops, setLocalStops] = useState<RouteStop[]>(route.route_stops || [])
 
@@ -123,7 +120,7 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
   }, [isInProgress, localStartTime])
   const availableCustomers = useMemo(() => {
     const inRouteIds = new Set(stops.map((s) => s.customer?.id).filter(Boolean) as string[])
-    const filtered = customers.filter((c) => !inRouteIds.has(c.id))
+    const filtered = customers.filter((c) => !c.id || !inRouteIds.has(c.id))
     if (!addSearch) return filtered
     const query = addSearch.toLowerCase()
     return filtered.filter(
@@ -132,6 +129,25 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
         (c.address || '').toLowerCase().includes(query)
     )
   }, [customers, stops, addSearch])
+
+  const handleDriverChange = async (value: string) => {
+    setSelectedDriverId(value)
+    setIsUpdatingDriver(true)
+
+    const driverId = value === 'unassigned' ? null : value
+    const result = await assignRouteDriver({ routeId: route.id, driverId })
+
+    setIsUpdatingDriver(false)
+
+    if ('error' in result) {
+      toast.error(result.error)
+      setSelectedDriverId(route.driver_id ?? 'unassigned')
+      return
+    }
+
+    toast.success(driverId ? 'Driver assigned' : 'Driver cleared')
+    router.refresh()
+  }
 
   const handleStopStatusChange = (stopId: string, status: string, updates?: Partial<RouteStop>) => {
     setLocalStops((prev) =>
@@ -150,11 +166,11 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
           setIsAutoCompleting(true)
           completeRoute(route.id)
             .then((result) => {
-              if (result.error) {
+              if ('error' in result) {
                 toast.error(result.error)
                 return
               }
-              if (result.alreadyCompleted) {
+              if ('alreadyCompleted' in result && result.alreadyCompleted) {
                 setLocalStatus('completed')
                 setElapsed(null)
                 router.refresh()
@@ -178,7 +194,7 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
     try {
       setIsStarting(true)
       const result = await startRoute(route.id)
-      if (result.error) {
+      if ('error' in result) {
         toast.error(result.error)
       } else {
         toast.success('Route started! Timer running.')
@@ -208,9 +224,9 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
 
     setIsCompleting(true)
     const result = await completeRoute(route.id)
-    if (result.error) {
+    if ('error' in result) {
       toast.error(result.error)
-    } else if (result.alreadyCompleted) {
+    } else if ('alreadyCompleted' in result && result.alreadyCompleted) {
       toast.message('Route already completed.')
       setLocalStatus('completed')
       setElapsed(null)
@@ -232,7 +248,7 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
 
     setIsDeleting(true)
     const result = await deleteRoute(route.id)
-    if (result.error) {
+    if ('error' in result) {
       toast.error(result.error)
       setIsDeleting(false)
     } else {
@@ -244,10 +260,13 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
   const handleAddStop = async (customerId: string) => {
     setAddingCustomerId(customerId)
     const result = await addStopToRoute({ routeId: route.id, customerId })
-    if (result.error) {
+    if ('error' in result) {
       toast.error(result.error)
     } else {
       toast.success('Stop added and route re-optimized')
+      if (result.warning) {
+        toast.warning(result.warning)
+      }
       setAddDialogOpen(false)
       router.refresh()
     }
@@ -257,6 +276,11 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
   // Fetch directions when component mounts
   useEffect(() => {
     if (!apiKey || stops.length === 0) return
+
+    if (stops.length > GOOGLE_DIRECTIONS_MAX_WAYPOINTS) {
+      setDirections(null)
+      return
+    }
 
     const fetchDirections = async () => {
       // Build waypoints array
@@ -273,8 +297,8 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
 
       try {
         const result = await directionsService.route({
-          origin: shopLocation,
-          destination: shopLocation,
+          origin: shopLocationPoint,
+          destination: shopLocationPoint,
           waypoints: waypoints,
           optimizeWaypoints: false, // Already optimized in database
           travelMode: google.maps.TravelMode.DRIVING
@@ -287,13 +311,13 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
     }
 
     fetchDirections()
-  }, [apiKey, stops, shopLocation.lat, shopLocation.lng])
+  }, [apiKey, stops, shopLocationPoint])
 
 
   return (
-    <div className="flex h-full">
+    <div className="flex min-h-full flex-col lg:flex-row">
       {/* Sidebar */}
-      <div className="w-96 border-r bg-white overflow-y-auto">
+      <div className="w-full border-b bg-white lg:w-96 lg:border-b-0 lg:border-r lg:overflow-y-auto">
         <div className="p-6 border-b">
           <Button variant="ghost" size="sm" className="mb-4" asChild>
             <Link href="/routes">
@@ -321,7 +345,7 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
             <span>{new Date(route.date).toLocaleDateString()}</span>
             {isInProgress && elapsed != null && (
               <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700 font-semibold text-xs">
-                ⏱ {Math.floor(elapsed / 60)
+                Time {Math.floor(elapsed / 60)
                   .toString()
                   .padStart(2, '0')}
                 :{(elapsed % 60).toString().padStart(2, '0')}
@@ -329,8 +353,35 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
             )}
           </div>
 
+          <div className="mt-4 space-y-2">
+            <div className="text-xs font-semibold uppercase text-muted-foreground">
+              Assigned driver
+            </div>
+            {crewMembers.length > 0 ? (
+              <Select
+                value={selectedDriverId}
+                onValueChange={handleDriverChange}
+                disabled={isUpdatingDriver}
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {crewMembers.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="text-sm text-muted-foreground">No crew members yet.</div>
+            )}
+          </div>
+
           {/* Route Controls */}
-          <div className="flex gap-2 mt-4">
+          <div className="flex flex-col gap-2 mt-4 sm:flex-row">
             {!isCompleted && (
               <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
                 <DialogTrigger asChild>
@@ -371,8 +422,11 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
                             </div>
                             <Button
                               size="sm"
-                              onClick={() => handleAddStop(customer.id)}
-                              disabled={addingCustomerId === customer.id}
+                              onClick={() => {
+                                if (!customer.id) return
+                                handleAddStop(customer.id)
+                              }}
+                              disabled={!customer.id || addingCustomerId === customer.id}
                             >
                               {addingCustomerId === customer.id ? 'Adding...' : 'Add'}
                             </Button>
@@ -434,7 +488,7 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
             {isCompleted && (
               <div className="w-full flex flex-col gap-2">
                 <div className="text-center py-2 px-4 bg-emerald-50 border border-emerald-200 rounded text-emerald-700 text-sm font-medium">
-                  ✓ Route Completed
+                  Route Completed
                 </div>
                 <Button asChild size="sm" variant="outline">
                   <Link href="/routes">Back to routes</Link>
@@ -495,7 +549,7 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
                   : 'Not started'}
               </div>
               <div className="text-xs text-muted-foreground">
-                Route Timer • Avg: {avgCompletedMinutes != null ? `${avgCompletedMinutes.toFixed(0)} min` : 'n/a'}
+                Route Timer - Avg: {avgCompletedMinutes != null ? `${avgCompletedMinutes.toFixed(0)} min` : 'n/a'}
               </div>
             </div>
           </div>
@@ -544,19 +598,19 @@ export function RouteDetailView({ route, customers, avgCompletedMinutes = 0, sho
       </div>
 
       {/* Map */}
-      <div className="flex-1 relative">
+      <div className="relative h-[45vh] w-full lg:h-auto lg:flex-1">
         {apiKey ? (
           <APIProvider apiKey={apiKey}>
             <Map
               mapId="route-detail-map"
-              defaultCenter={shopLocation}
+              defaultCenter={shopLocationPoint}
               defaultZoom={11}
               gestureHandling="greedy"
               disableDefaultUI={false}
               className="h-full w-full"
             >
               {/* Shop marker */}
-              <AdvancedMarker position={shopLocation}>
+              <AdvancedMarker position={shopLocationPoint}>
                 <Pin background="#10b981" borderColor="#ffffff" glyphColor="#ffffff" scale={1.2}>
                   <div className="text-xs font-bold">SHOP</div>
                 </Pin>

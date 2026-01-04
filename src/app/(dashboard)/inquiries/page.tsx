@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Inbox, Plus } from 'lucide-react'
 import { InquiriesTable } from '@/components/inquiries/InquiriesTable'
+import Link from 'next/link'
 
 export const metadata = {
   title: 'Inquiries | Lawn Care CRM',
@@ -29,10 +30,10 @@ export default async function InquiriesPage() {
             className="bg-emerald-500 hover:bg-emerald-600"
             asChild
           >
-            <a href="/inquiry">
+            <Link href="/inquiry">
               <Plus className="mr-2 h-4 w-4" />
               New Inquiry
-            </a>
+            </Link>
           </Button>
         </div>
       </div>

@@ -96,6 +96,9 @@ export function ServiceHistoryPanel({ customerId, entries }: ServiceHistoryPanel
                   {entry.customer_rating && (
                     <Badge variant="secondary">Rating: {entry.customer_rating}</Badge>
                   )}
+                  {entry.photos && entry.photos.length > 0 && (
+                    <Badge variant="secondary">Photos: {entry.photos.length}</Badge>
+                  )}
                 </div>
                 {entry.notes && (
                   <p className="mt-2 text-xs text-muted-foreground">{entry.notes}</p>

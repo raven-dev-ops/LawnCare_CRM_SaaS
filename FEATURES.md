@@ -215,3 +215,11 @@ Interactive Google Maps interface with:
 - [ ] Loading skeletons
 - [ ] Empty state illustrations
 - [ ] Onboarding tour
+
+
+## Route Optimization
+
+- Routes use Google Directions optimization for up to 23 stops per request.
+- Larger routes are optimized in chunks with a nearest-neighbor fallback to stay within API limits.
+- Chunked routes trade optimality for reliability; distance/time values are approximations when Directions data is unavailable.
+

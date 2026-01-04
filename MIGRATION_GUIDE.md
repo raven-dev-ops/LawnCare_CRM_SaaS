@@ -11,7 +11,6 @@ This guide walks you through moving customers from Google Sheets into the CRM us
 2. Click **Import / Export**.
 3. Use **Download Template** (or **Download CSV** if you already have data in the CRM).
 
-You can also review the sample file: `Lawn_care_example - Working.csv`.
 
 ## Step 2: Prepare Your Spreadsheet
 Use the template headers exactly. Required columns are marked below.

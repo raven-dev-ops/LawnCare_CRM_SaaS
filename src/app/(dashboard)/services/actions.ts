@@ -208,7 +208,15 @@ export async function getServicePlans(serviceId: string) {
       return { error: 'Failed to load linked plans.' }
     }
 
-    return { success: true, plans: (data || []) as ServicePlan[] }
+    const normalizedPlans: ServicePlan[] = (data || []).map((plan) => {
+      const customer = Array.isArray(plan.customer) ? plan.customer[0] : plan.customer
+      return {
+        ...plan,
+        customer: customer ?? null,
+      }
+    })
+
+    return { success: true, plans: normalizedPlans }
   } catch (error) {
     console.error('Fetch service plans error:', error)
     return { error: 'An unexpected error occurred' }

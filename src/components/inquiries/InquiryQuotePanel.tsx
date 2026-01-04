@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { updateInquiryDetails } from '@/app/(dashboard)/inquiries/actions'
 import type { Inquiry } from '@/types/database.types'
 import { toast } from 'sonner'
+import Link from 'next/link'
 
 interface InquiryQuotePanelProps {
   inquiryId: string
@@ -122,12 +123,12 @@ export function InquiryQuotePanel({
       {convertedCustomerId && (
         <div className="pt-2 border-t">
           <span>Converted: </span>
-          <a
+          <Link
             href="/customers"
             className="font-medium text-emerald-700 hover:underline"
           >
             View in Customers
-          </a>
+          </Link>
         </div>
       )}
     </div>

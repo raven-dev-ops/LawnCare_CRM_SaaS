@@ -18,6 +18,8 @@ export default async function RoutesPage() {
       date,
       day_of_week,
       status,
+      driver_id,
+      driver_name,
       total_distance_miles,
       total_duration_minutes,
       estimated_fuel_cost,
@@ -39,10 +41,17 @@ export default async function RoutesPage() {
     .is('archived_at', null)
     .is('day', null)
 
+  const { data: crewMembers } = await supabase
+    .from('crew_members')
+    .select('id, name, active')
+    .eq('active', true)
+    .order('name')
+
   return (
     <RoutesOverview
       routes={routes || []}
       unscheduledCustomers={unscheduledCustomers || []}
+      crewMembers={crewMembers || []}
       routesError={!!routesError}
       unscheduledError={!!unscheduledError}
     />

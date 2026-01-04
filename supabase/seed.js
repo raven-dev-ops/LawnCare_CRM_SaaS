@@ -1,10 +1,6 @@
 require('dotenv').config()
-const fs = require('fs')
-const path = require('path')
 const { createClient } = require('@supabase/supabase-js')
 
-const csvPath = path.join(__dirname, '..', 'Lawn_care_example - Working.csv')
-const csvData = fs.readFileSync(csvPath, 'utf-8')
 const DAY_INDEX = {
   Sunday: 0,
   Monday: 1,
@@ -15,75 +11,95 @@ const DAY_INDEX = {
   Saturday: 6,
 }
 
-function parseCurrency(value) {
-  if (!value) return null
-  const cleaned = value.replace(/[$,\s]/g, '')
-  const num = parseFloat(cleaned)
-  return Number.isFinite(num) ? num : null
-}
+const SAMPLE_CUSTOMERS = [
+  {
+    name: 'Green Valley HOA',
+    address: '123 Meadow Ln, St Peters, MO',
+    type: 'Commercial',
+    cost: 250,
+    day: 'Monday',
+    route_order: 1,
+    distance_from_shop_km: 3.4,
+    distance_from_shop_miles: 2.1,
+    has_additional_work: true,
+    additional_work_cost: 45,
+  },
+  {
+    name: 'Maple Ridge Apartments',
+    address: '9800 Maple Ridge Dr, St Peters, MO',
+    type: 'Commercial',
+    cost: 320,
+    day: 'Monday',
+    route_order: 2,
+    distance_from_shop_km: 5.6,
+    distance_from_shop_miles: 3.5,
+    has_additional_work: false,
+    additional_work_cost: null,
+  },
+  {
+    name: 'Jordan Residence',
+    address: '42 Brookfield Ct, St Peters, MO',
+    type: 'Residential',
+    cost: 55,
+    day: 'Tuesday',
+    route_order: 1,
+    distance_from_shop_km: 1.9,
+    distance_from_shop_miles: 1.2,
+    has_additional_work: false,
+    additional_work_cost: null,
+  },
+  {
+    name: 'Woodside Plaza',
+    address: '2100 Woodside Blvd, St Peters, MO',
+    type: 'Commercial',
+    cost: 410,
+    day: 'Tuesday',
+    route_order: 2,
+    distance_from_shop_km: 6.4,
+    distance_from_shop_miles: 4.0,
+    has_additional_work: true,
+    additional_work_cost: 80,
+  },
+  {
+    name: 'Stonebrook Estates',
+    address: '17 Stonebrook Way, St Peters, MO',
+    type: 'Residential',
+    cost: 75,
+    day: 'Wednesday',
+    route_order: 1,
+    distance_from_shop_km: 8.4,
+    distance_from_shop_miles: 5.2,
+    has_additional_work: false,
+    additional_work_cost: null,
+  },
+  {
+    name: 'Oak Creek Bakery',
+    address: '88 Oak St, St Peters, MO',
+    type: 'Commercial',
+    cost: 180,
+    day: 'Wednesday',
+    route_order: 2,
+    distance_from_shop_km: 4.1,
+    distance_from_shop_miles: 2.6,
+    has_additional_work: false,
+    additional_work_cost: null,
+  },
+  {
+    name: 'Riverbend Residence',
+    address: '17 Riverbend Rd, St Peters, MO',
+    type: 'Residential',
+    cost: 65,
+    day: null,
+    route_order: null,
+    distance_from_shop_km: 1.6,
+    distance_from_shop_miles: 1.0,
+    has_additional_work: false,
+    additional_work_cost: null,
+  },
+]
 
-function normalizeField(value) {
-  return value.replace(/^\s*"|"\s*$/g, '').trim()
-}
-
-function parseCustomers() {
-  const lines = csvData.split('\n').slice(1)
-  const customers = []
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim()
-    if (!line) continue
-
-    const fields = []
-    let current = ''
-    let inQuotes = false
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i]
-      if (char === '"') {
-        inQuotes = !inQuotes
-      } else if (char === ',' && !inQuotes) {
-        fields.push(normalizeField(current))
-        current = ''
-      } else {
-        current += char
-      }
-    }
-    fields.push(normalizeField(current))
-
-    const [
-      name,
-      address,
-      type,
-      cost,
-      day,
-      order,
-      distKm,
-      distMiles,
-      additionalWork,
-      additionalWorkCost,
-    ] = fields
-
-    if (!name || !address) continue
-
-    // Skip the workshop record from the CSV
-    if (type === 'Workshop') continue
-
-    customers.push({
-      name,
-      address,
-      type: type || 'Residential',
-      cost: parseCurrency(cost) ?? 0,
-      day: day && day !== 'Workshop' ? day : null,
-      route_order: order ? parseInt(order, 10) : null,
-      distance_from_shop_km: distKm ? parseFloat(distKm) : null,
-      distance_from_shop_miles: distMiles ? parseFloat(distMiles) : null,
-      has_additional_work: (additionalWork || '').toLowerCase() === 'yes',
-      additional_work_cost: parseCurrency(additionalWorkCost),
-    })
-  }
-
-  return customers
+function getSeedCustomers() {
+  return SAMPLE_CUSTOMERS
 }
 
 function getUpcomingDate(dayName) {
@@ -205,7 +221,7 @@ async function insertRoutes(supabase, customers) {
 
     routesCreated += 1
     console.log(
-      `• ${day}: ${dayCustomers.length} stops | ${distance.toFixed(
+      `- ${day}: ${dayCustomers.length} stops | ${distance.toFixed(
         1
       )} mi | $${fuelCost.toFixed(2)} fuel`
     )
@@ -230,10 +246,10 @@ async function seedDatabase() {
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey)
-  const customers = parseCustomers()
+  const customers = getSeedCustomers()
 
   if (customers.length === 0) {
-    console.error('No customers parsed from CSV. Check the file formatting.')
+    console.error('No seed customers available.')
     process.exit(1)
   }
 

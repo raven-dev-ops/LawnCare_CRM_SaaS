@@ -191,6 +191,10 @@ function CustomersMapContent({
   const map = useMap()
   const [clusterer, setClusterer] = useState<MarkerClusterer | null>(null)
 
+  const navigationHref = selectedCustomer && selectedCustomer.latitude != null && selectedCustomer.longitude != null
+    ? `https://www.google.com/maps/dir/?api=1&destination=${selectedCustomer.latitude},${selectedCustomer.longitude}`
+    : null
+
   useEffect(() => {
     if (!map) return
     const nextClusterer = new MarkerClusterer({ map })
@@ -293,19 +297,19 @@ function CustomersMapContent({
                 <Link href={`/customers/${selectedCustomer.id}`}>View Details</Link>
               </Button>
               <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    if (!selectedCustomer.latitude || !selectedCustomer.longitude) return
-                    const url = `https://www.google.com/maps/dir/?api=1&destination=${selectedCustomer.latitude},${selectedCustomer.longitude}`
-                    window.open(url, '_blank')
-                  }}
-                >
-                  <Navigation className="mr-2 h-4 w-4" />
-                  Navigate
-                </Button>
+                {navigationHref ? (
+                  <Button size="sm" variant="outline" className="flex-1" asChild>
+                    <a href={navigationHref} target="_blank" rel="noopener noreferrer">
+                      <Navigation className="mr-2 h-4 w-4" />
+                      Navigate
+                    </a>
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" className="flex-1" disabled>
+                    <Navigation className="mr-2 h-4 w-4" />
+                    Navigate
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"

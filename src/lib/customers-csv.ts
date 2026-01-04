@@ -20,8 +20,7 @@ export const CUSTOMER_EXPORT_HEADERS = [
 function escapeCsvValue(value: string | number | null | undefined) {
   if (value === undefined || value === null) return ''
   const stringValue = String(value)
-  if (/[",
-]/.test(stringValue)) {
+  if (/[",\n]/.test(stringValue)) {
     return `"${stringValue.replace(/"/g, '""')}"`
   }
   return stringValue
@@ -29,8 +28,7 @@ function escapeCsvValue(value: string | number | null | undefined) {
 
 export function buildCsv(headers: string[], rows: string[][]) {
   const lines = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(','))
-  return lines.join('
-')
+  return lines.join('\n')
 }
 
 export function buildCustomerExportRows(customers: Customer[]) {

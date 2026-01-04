@@ -46,7 +46,8 @@ function getClientIp(request: NextRequest) {
   if (forwarded) {
     return forwarded.split(',')[0]?.trim() || null
   }
-  return request.ip || request.headers.get('x-real-ip')
+  const realIp = request.headers.get('x-real-ip')
+  return realIp || null
 }
 
 function logBlockedSubmission(payload: {

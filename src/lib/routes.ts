@@ -1,6 +1,8 @@
 import { SHOP_LOCATION } from './config'
 import { haversineMiles } from './geo'
 
+export const GOOGLE_DIRECTIONS_MAX_WAYPOINTS = 23
+
 interface RoutePoint {
   latitude: number | null
   longitude: number | null
@@ -60,6 +62,57 @@ export function optimizeRouteNearestNeighborWithIndices<T extends RoutePoint>(
   return {
     ordered: ordered.map((item) => item.point),
     orderIndices: ordered.map((item) => item.index),
+  }
+}
+
+export function chunkRouteStops<T>(stops: T[], maxChunkSize: number) {
+  if (maxChunkSize <= 0) {
+    return [stops]
+  }
+
+  const chunks: T[][] = []
+  for (let i = 0; i < stops.length; i += maxChunkSize) {
+    chunks.push(stops.slice(i, i + maxChunkSize))
+  }
+  return chunks
+}
+
+export function estimateRouteMetrics(
+  points: RoutePoint[],
+  origin: RouteOrigin = SHOP_LOCATION
+) {
+  if (points.length === 0) {
+    return { distanceMiles: 0, durationMinutes: 0 }
+  }
+
+  let distance = 0
+  let prev = { lat: origin.lat, lng: origin.lng }
+  let hasVisited = false
+
+  points.forEach((point) => {
+    if (point.latitude == null || point.longitude == null) return
+    distance += haversineMiles(
+      prev.lat,
+      prev.lng,
+      point.latitude,
+      point.longitude
+    )
+    prev = { lat: point.latitude, lng: point.longitude }
+    hasVisited = true
+  })
+
+  if (hasVisited) {
+    distance += haversineMiles(
+      prev.lat,
+      prev.lng,
+      origin.lat,
+      origin.lng
+    )
+  }
+
+  return {
+    distanceMiles: distance,
+    durationMinutes: Math.round(distance * 3),
   }
 }
 

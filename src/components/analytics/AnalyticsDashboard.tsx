@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps'
+import { APIProvider, Map as GoogleMap, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -781,17 +781,23 @@ interface FilterableBarChartProps {
   onSelect?: (label: string) => void
 }
 
+type TooltipPayload = {
+  value?: number
+}
+
+type TooltipProps = {
+  active?: boolean
+  payload?: TooltipPayload[]
+  label?: string
+  currency?: boolean
+}
+
 function CustomTooltip({
   active,
   payload,
   label,
   currency,
-}: {
-  active?: boolean
-  payload?: any[]
-  label?: string
-  currency?: boolean
-}) {
+}: TooltipProps) {
   if (!active || !payload || !payload.length) return null
   const value = Number(payload[0].value || 0)
   return (
@@ -832,13 +838,17 @@ function FilterableBarChart({
           />
           <Bar
             dataKey="value"
-            onClick={(data) => onSelect?.((data as any).label)}
             cursor={onSelect ? 'pointer' : 'default'}
           >
             {data.map((entry, index) => {
               const active = !anySelected || selectedLabels?.includes(entry.label)
               return (
-                <Cell key={`${entry.label}-${index}`} fill={color} fillOpacity={active ? 1 : 0.35} />
+                <Cell
+                  key={`${entry.label}-${index}`}
+                  fill={color}
+                  fillOpacity={active ? 1 : 0.35}
+                  onClick={onSelect ? () => onSelect(entry.label) : undefined}
+                />
               )
             })}
           </Bar>
@@ -852,11 +862,7 @@ function CompletionTooltip({
   active,
   payload,
   label,
-}: {
-  active?: boolean
-  payload?: any[]
-  label?: string
-}) {
+}: Omit<TooltipProps, 'currency'>) {
   if (!active || !payload || !payload.length) return null
   const value = Number(payload[0].value || 0)
   return (
@@ -915,6 +921,11 @@ function MapSection({
 }) {
   const map = useMap('analytics-map-instance')
 
+  const shopLocationPoint = useMemo(
+    () => ({ lat: shopLocation.lat, lng: shopLocation.lng }),
+    [shopLocation.lat, shopLocation.lng]
+  )
+
   const legendSet = new Set<string>(filtered.map((customer) => customer.day || 'Unscheduled'))
   legendSet.add('Workshop')
 
@@ -931,7 +942,7 @@ function MapSection({
     if (!map) return
     const points = filtered.filter((customer) => customer.latitude != null && customer.longitude != null)
     if (points.length === 0) {
-      map.setCenter(shopLocation)
+      map.setCenter(shopLocationPoint)
       map.setZoom(11)
       return
     }
@@ -947,21 +958,21 @@ function MapSection({
     } else {
       map.fitBounds(bounds, 40)
     }
-  }, [map, filtered, shopLocation.lat, shopLocation.lng])
+  }, [map, filtered, shopLocationPoint])
 
   return (
     <>
-      <Map
+      <GoogleMap
         id="analytics-map-instance"
         mapId="analytics-map"
-        defaultCenter={shopLocation}
+        defaultCenter={shopLocationPoint}
         defaultZoom={11}
         className="h-full w-full rounded-lg"
         disableDefaultUI={false}
         gestureHandling="greedy"
         onClick={() => onSelectCustomer(null)}
       >
-        <AdvancedMarker position={shopLocation} zIndex={8000}>
+        <AdvancedMarker position={shopLocationPoint} zIndex={8000}>
           <Pin
             background={DAY_COLORS['Workshop'] || '#22c55e'}
             glyphColor="transparent"
@@ -984,7 +995,7 @@ function MapSection({
             </AdvancedMarker>
           )
         })}
-      </Map>
+      </GoogleMap>
       {selectedCustomerId && (
         <div
           className="absolute inset-0 z-10 flex items-center justify-center bg-black/10"

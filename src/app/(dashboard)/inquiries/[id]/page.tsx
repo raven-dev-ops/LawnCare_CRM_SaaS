@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { InquiryQuotePanel } from '@/components/inquiries/InquiryQuotePanel'
 import { ArrowLeft, Inbox, MapPin, Phone, Mail } from 'lucide-react'
+import Link from 'next/link'
 import type { Inquiry } from '@/types/database.types'
 
 const STATUS_LABELS: Record<Inquiry['status'], string> = {
@@ -39,11 +40,13 @@ export default async function InquiryDetailPage({
     notFound()
   }
 
-  const createdAt = inquiry.created_at
-    ? new Date(inquiry.created_at).toLocaleString()
+  const inquiryRecord = inquiry as Inquiry
+
+  const createdAt = inquiryRecord.created_at
+    ? new Date(inquiryRecord.created_at).toLocaleString()
     : null
-  const contactedAt = inquiry.contacted_at
-    ? new Date(inquiry.contacted_at).toLocaleString()
+  const contactedAt = inquiryRecord.contacted_at
+    ? new Date(inquiryRecord.contacted_at).toLocaleString()
     : null
 
   return (
@@ -52,14 +55,14 @@ export default async function InquiryDetailPage({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" asChild>
-              <a href="/inquiries">
+              <Link href="/inquiries">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Inquiries
-              </a>
+              </Link>
             </Button>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">
-                {inquiry.name}
+                {inquiryRecord.name}
               </h1>
               <p className="text-sm text-muted-foreground">
                 Inquiry details and conversion status
@@ -67,7 +70,7 @@ export default async function InquiryDetailPage({
             </div>
           </div>
           <Badge variant="secondary" className="capitalize">
-            {STATUS_LABELS[inquiry.status]}
+            {STATUS_LABELS[inquiryRecord.status]}
           </Badge>
         </div>
       </div>
@@ -87,12 +90,12 @@ export default async function InquiryDetailPage({
                 <div className="flex flex-col gap-1 text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <Mail className="h-3 w-3" />
-                    <span>{inquiry.email}</span>
+                    <span>{inquiryRecord.email}</span>
                   </div>
-                  {inquiry.phone && (
+                  {inquiryRecord.phone && (
                     <div className="flex items-center gap-2">
                       <Phone className="h-3 w-3" />
-                      <span>{inquiry.phone}</span>
+                      <span>{inquiryRecord.phone}</span>
                     </div>
                   )}
                 </div>
@@ -102,19 +105,19 @@ export default async function InquiryDetailPage({
                 <div className="font-medium">Address</div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <MapPin className="h-3 w-3" />
-                  <span>{inquiry.address}</span>
+                  <span>{inquiryRecord.address}</span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  {inquiry.property_type || 'Property type not specified'}
-                  {inquiry.lot_size ? ` · ${inquiry.lot_size}` : ''}
+                  {inquiryRecord.property_type || 'Property type not specified'}
+                  {inquiryRecord.lot_size ? ` - ${inquiryRecord.lot_size}` : ''}
                 </div>
               </div>
 
               <div className="space-y-1">
                 <div className="font-medium">Services interested in</div>
-                {inquiry.services_interested && inquiry.services_interested.length > 0 ? (
+                {inquiryRecord.services_interested && inquiryRecord.services_interested.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {inquiry.services_interested.map((service) => (
+                    {inquiryRecord.services_interested.map((service) => (
                       <Badge key={service} variant="outline" className="text-xs">
                         {service}
                       </Badge>
@@ -130,7 +133,7 @@ export default async function InquiryDetailPage({
               <div className="space-y-1">
                 <div className="font-medium">Notes from customer</div>
                 <div className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {inquiry.notes || 'No additional notes provided.'}
+                  {inquiryRecord.notes || 'No additional notes provided.'}
                 </div>
               </div>
             </CardContent>
@@ -159,13 +162,13 @@ export default async function InquiryDetailPage({
               </CardHeader>
               <CardContent>
                 <InquiryQuotePanel
-                  inquiryId={inquiry.id}
-                  status={inquiry.status}
-                  preferredContactMethod={inquiry.preferred_contact_method}
-                  preferredContactTime={inquiry.preferred_contact_time}
-                  quoteAmount={inquiry.quote_amount}
-                  internalNotes={inquiry.internal_notes}
-                  convertedCustomerId={inquiry.converted_customer_id}
+                  inquiryId={inquiryRecord.id}
+                  status={inquiryRecord.status}
+                  preferredContactMethod={inquiryRecord.preferred_contact_method}
+                  preferredContactTime={inquiryRecord.preferred_contact_time}
+                  quoteAmount={inquiryRecord.quote_amount}
+                  internalNotes={inquiryRecord.internal_notes}
+                  convertedCustomerId={inquiryRecord.converted_customer_id}
                 />
               </CardContent>
             </Card>

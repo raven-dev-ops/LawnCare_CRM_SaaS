@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const PUBLIC_PATHS = ['/login', '/inquiry']
+const SUPABASE_AUTH_DISABLED = process.env.SUPABASE_AUTH_DISABLED === 'true'
+
 const PUBLIC_PREFIXES = ['/api', '/auth']
 
 function isPublicRoute(pathname: string) {
@@ -13,6 +15,10 @@ function isPublicRoute(pathname: string) {
 }
 
 export async function updateSession(request: NextRequest) {
+  if (SUPABASE_AUTH_DISABLED) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -60,7 +66,9 @@ export async function updateSession(request: NextRequest) {
     )
     url.searchParams.set('reason', 'auth-required')
     const response = NextResponse.redirect(url)
-    response.cookies.setAll(supabaseResponse.cookies.getAll())
+    supabaseResponse.cookies.getAll().forEach(({ name, value, ...options }) => {
+      response.cookies.set(name, value, options)
+    })
     return response
   }
 

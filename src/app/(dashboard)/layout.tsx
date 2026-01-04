@@ -1,5 +1,5 @@
 import { RoleProvider } from '@/components/auth/RoleProvider'
-import { Sidebar } from '@/components/layout/Sidebar'
+import { DashboardShell } from '@/components/layout/DashboardShell'
 
 export default function DashboardLayout({
   children,
@@ -8,12 +8,7 @@ export default function DashboardLayout({
 }) {
   return (
     <RoleProvider>
-      <div className="flex h-screen overflow-hidden bg-slate-50">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
-      </div>
+      <DashboardShell>{children}</DashboardShell>
     </RoleProvider>
   )
 }

@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { requireAdmin } from '@/lib/roles'
 import { revalidatePath } from 'next/cache'
 import type { ServiceHistory } from '@/types/database.types'
 
@@ -14,6 +13,7 @@ interface ServiceHistoryInput {
   notes?: string | null
   customerRating?: number | null
   routeStopId?: string | null
+  photos?: string[] | null
 }
 
 interface ServiceHistoryUpdateInput {
@@ -25,6 +25,7 @@ interface ServiceHistoryUpdateInput {
   durationMinutes?: number | null
   notes?: string | null
   customerRating?: number | null
+  photos?: string[] | null
 }
 
 export async function createServiceHistory(input: ServiceHistoryInput) {
@@ -41,6 +42,7 @@ export async function createServiceHistory(input: ServiceHistoryInput) {
       duration_minutes: input.durationMinutes ?? null,
       notes: input.notes ?? null,
       customer_rating: input.customerRating ?? null,
+      photos: input.photos ?? null,
     })
     .select()
     .single()
@@ -67,6 +69,7 @@ export async function updateServiceHistory(input: ServiceHistoryUpdateInput) {
       duration_minutes: input.durationMinutes ?? null,
       notes: input.notes ?? null,
       customer_rating: input.customerRating ?? null,
+      photos: input.photos ?? null,
     })
     .eq('id', input.id)
     .select()

@@ -141,7 +141,8 @@ src/
 ```env
 # Supabase
 SUPABASE_URL=                    # Your Supabase project URL
-SUPABASE_SERVICE_ROLE_KEY=       # Service role key (server-side only)
+SUPABASE_SERVICE_ROLE_KEY=       # Optional: inquiry rate limiting + admin server tasks
+SUPABASE_AUTH_DISABLED=          # Optional: bypass auth checks for local UI testing
 SUPABASE_ANON_KEY=               # Anonymous key
 NEXT_PUBLIC_SUPABASE_URL=        # Public URL for client
 NEXT_PUBLIC_SUPABASE_ANON_KEY=   # Public anon key for client
@@ -154,6 +155,9 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY= # Browser Maps JavaScript key
 NEXT_PUBLIC_RECAPTCHA_SITE_KEY=
 RECAPTCHA_SECRET_KEY=
 ```
+
+Note: `SUPABASE_SERVICE_ROLE_KEY` is optional unless you need inquiry rate limiting or admin/background tasks; if omitted, inquiry rate limiting is skipped.
+You can set `SUPABASE_AUTH_DISABLED=true` to bypass auth checks while running UI smoke tests or local demos without a Supabase instance.
 
 ## Auth Setup (Supabase)
 

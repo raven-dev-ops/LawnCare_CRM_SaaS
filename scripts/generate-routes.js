@@ -59,8 +59,6 @@ async function optimizeRoute(customers) {
 
     if (data.status === 'OK' && data.routes.length > 0) {
       const route = data.routes[0];
-      const leg = route.legs[0];
-
       // Get total distance and duration
       let totalDistance = 0;
       let totalDuration = 0;

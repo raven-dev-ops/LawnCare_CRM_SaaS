@@ -20,5 +20,16 @@ export default async function NewRoutePage() {
     .not('longitude', 'is', null)
     .order('name')
 
-  return <RouteBuilder customers={customers || []} shopLocation={shopLocation} />
+  const { data: crewMembers } = await supabase
+    .from('crew_members')
+    .select('id, name, active')
+    .order('name')
+
+  return (
+    <RouteBuilder
+      customers={customers || []}
+      shopLocation={shopLocation}
+      crewMembers={crewMembers || []}
+    />
+  )
 }

@@ -36,6 +36,19 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
     .select('id, converted_customer_id')
     .not('converted_customer_id', 'is', null)
 
+  let googleSheetsConnected = false
+  const { data: sheetsConnection, error: sheetsError } = await supabase
+    .from('google_sheets_connections')
+    .select('id')
+    .eq('singleton', true)
+    .maybeSingle()
+
+  if (sheetsError) {
+    console.error('Error fetching Google Sheets connection:', sheetsError)
+  } else {
+    googleSheetsConnected = Boolean(sheetsConnection?.id)
+  }
+
   const inquiryByCustomerId: Record<string, string> = {}
   convertedInquiries?.forEach((inq) => {
     if (inq.converted_customer_id) {
@@ -54,6 +67,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
       inquiryByCustomerId={inquiryByCustomerId}
       shopLocation={shopLocation}
       initialArchiveFilter={archiveFilter}
+      googleSheetsConnected={googleSheetsConnected}
     />
   )
 }

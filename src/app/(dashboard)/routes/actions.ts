@@ -5,73 +5,212 @@ import { requireAdmin } from '@/lib/roles'
 import { revalidatePath } from 'next/cache'
 import { GOOGLE_MAPS_SERVER_API_KEY } from '@/lib/config'
 import { getShopLocation } from '@/lib/settings'
-import { haversineMiles } from '@/lib/geo'
-import { buildStopOrderIds, getCompletionPlan, optimizeRouteNearestNeighborWithIndices } from '@/lib/routes'
-import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { buildStopOrderIds, chunkRouteStops, estimateRouteMetrics, getCompletionPlan, GOOGLE_DIRECTIONS_MAX_WAYPOINTS, optimizeRouteNearestNeighborWithIndices } from '@/lib/routes'
 
 const SERVICE_TIME_PER_STOP_MIN = 30
 
-function getServiceSupabase() {
-  const supabaseUrl =
-    process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+type AuthClient = Awaited<ReturnType<typeof createClient>>
+type AuthClientResult = { supabase: AuthClient } | { error: string }
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Supabase service role env vars are missing')
+async function requireAuthenticatedClient(): Promise<AuthClientResult> {
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.getUser()
+
+  if (error) {
+    console.error('Auth user lookup failed:', error)
   }
 
-  return createServiceClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  })
+  if (!data.user) {
+    return { error: 'Authentication required.' }
+  }
+
+  return { supabase }
 }
 
-async function getOptimizedRoute(customers: Array<{ id: string; latitude: number | null; longitude: number | null }>, shopLocation: { lat: number; lng: number }) {
+type RouteStop = {
+  id: string
+  latitude: number | null
+  longitude: number | null
+}
+
+type LatLng = {
+  lat: number
+  lng: number
+}
+
+type DirectionsLeg = {
+  distance?: { value?: number }
+  duration?: { value?: number }
+}
+
+type DirectionsRoute = {
+  legs?: DirectionsLeg[]
+  waypoint_order?: number[]
+}
+
+type DirectionsResponse = {
+  status?: string
+  routes?: DirectionsRoute[]
+}
+
+type OptimizedRouteResult = {
+  orderedCustomers: RouteStop[]
+  drivingDistanceMiles: number
+  drivingDurationMinutes: number
+  orderIndices: number[]
+  warning?: string
+}
+
+function getLatLng(point: RouteStop | null) {
+  if (!point || point.latitude == null || point.longitude == null) {
+    return null
+  }
+  return { lat: point.latitude, lng: point.longitude }
+}
+
+function buildEstimatedRoute(
+  orderedCustomers: RouteStop[],
+  shopLocation: LatLng,
+  orderIndices: number[],
+  warning?: string
+): OptimizedRouteResult {
+  const metrics = estimateRouteMetrics(orderedCustomers, shopLocation)
+
+  return {
+    orderedCustomers,
+    drivingDistanceMiles: metrics.distanceMiles,
+    drivingDurationMinutes: metrics.durationMinutes,
+    orderIndices,
+    warning,
+  }
+}
+
+async function fetchDirectionsMetrics(
+  origin: LatLng,
+  destination: LatLng,
+  waypoints: LatLng[]
+) {
+  if (!GOOGLE_MAPS_SERVER_API_KEY) {
+    return null
+  }
+
+  const originParam = `${origin.lat},${origin.lng}`
+  const destinationParam = `${destination.lat},${destination.lng}`
+  const waypointParam = waypoints.length
+    ? `&waypoints=${waypoints.map((point) => encodeURIComponent(`${point.lat},${point.lng}`)).join('|')}`
+    : ''
+  const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${originParam}&destination=${destinationParam}${waypointParam}&mode=driving&key=${GOOGLE_MAPS_SERVER_API_KEY}`
+
+  const response = await fetch(url)
+  if (!response.ok) {
+    return null
+  }
+
+  const data = (await response.json()) as DirectionsResponse
+  if (data.status !== 'OK' || !data.routes?.[0]) {
+    return null
+  }
+
+  const legs: DirectionsLeg[] = data.routes[0].legs ?? []
+  const totalDistanceMeters = legs.reduce(
+    (sum, leg) => sum + (leg.distance?.value ?? 0),
+    0
+  )
+  const totalDurationSeconds = legs.reduce(
+    (sum, leg) => sum + (leg.duration?.value ?? 0),
+    0
+  )
+
+  return {
+    distanceMiles: totalDistanceMeters / 1609.34,
+    durationMinutes: Math.round(totalDurationSeconds / 60),
+  }
+}
+
+async function getChunkedDirectionsMetrics(
+  orderedCustomers: RouteStop[],
+  shopLocation: LatLng
+) {
+  const chunks = chunkRouteStops(orderedCustomers, GOOGLE_DIRECTIONS_MAX_WAYPOINTS)
+  let totalDistance = 0
+  let totalDuration = 0
+  let origin = { lat: shopLocation.lat, lng: shopLocation.lng }
+
+  for (let i = 0; i < chunks.length; i += 1) {
+    const chunk = chunks[i]
+    if (chunk.length === 0) continue
+
+    const isLast = i === chunks.length - 1
+    const destinationStop = isLast ? null : chunk[chunk.length - 1]
+    const destination = isLast ? shopLocation : getLatLng(destinationStop)
+    if (!destination) {
+      return null
+    }
+
+    const waypointStops = isLast ? chunk : chunk.slice(0, -1)
+    const waypointCoords: LatLng[] = []
+    for (const stop of waypointStops) {
+      const coords = getLatLng(stop)
+      if (!coords) {
+        return null
+      }
+      waypointCoords.push(coords)
+    }
+
+    const metrics = await fetchDirectionsMetrics(origin, destination, waypointCoords)
+    if (!metrics) {
+      return null
+    }
+
+    totalDistance += metrics.distanceMiles
+    totalDuration += metrics.durationMinutes
+    origin = destination
+  }
+
+  return {
+    distanceMiles: totalDistance,
+    durationMinutes: totalDuration,
+  }
+}
+
+async function getOptimizedRoute(customers: RouteStop[], shopLocation: LatLng): Promise<OptimizedRouteResult> {
   const allHaveCoords = customers.every(
     (c) => c.latitude != null && c.longitude != null
   )
   const canUseGoogle = Boolean(GOOGLE_MAPS_SERVER_API_KEY) && customers.length >= 2 && allHaveCoords
+  const exceedsWaypointLimit = customers.length > GOOGLE_DIRECTIONS_MAX_WAYPOINTS
 
   // Fallback helper that uses nearest-neighbor and rough drive time
-  const fallbackNearestNeighbor = () => {
+  const fallbackNearestNeighbor = (warning?: string) => {
     const { ordered, orderIndices } = optimizeRouteNearestNeighborWithIndices(customers, shopLocation)
-    let distance = 0
-    let prev = { lat: shopLocation.lat, lng: shopLocation.lng }
+    return buildEstimatedRoute(ordered, shopLocation, orderIndices, warning)
+  }
 
-    ordered.forEach((customer) => {
-      if (customer.latitude && customer.longitude) {
-        distance += haversineMiles(
-          prev.lat,
-          prev.lng,
-          customer.latitude,
-          customer.longitude
-        )
-        prev = { lat: customer.latitude, lng: customer.longitude }
-      }
-    })
+  if (!canUseGoogle) {
+    return fallbackNearestNeighbor()
+  }
 
-    const last = ordered[ordered.length - 1]
-    if (last?.latitude && last?.longitude) {
-      distance += haversineMiles(
-        last.latitude,
-        last.longitude,
-        shopLocation.lat,
-        shopLocation.lng
+  if (exceedsWaypointLimit) {
+    const { ordered, orderIndices } = optimizeRouteNearestNeighborWithIndices(customers, shopLocation)
+    const warning = `Route has ${customers.length} stops. Using chunked optimization to stay within the ${GOOGLE_DIRECTIONS_MAX_WAYPOINTS}-stop Directions API limit.`
+    const metrics = await getChunkedDirectionsMetrics(ordered, shopLocation)
+
+    if (!metrics) {
+      return buildEstimatedRoute(
+        ordered,
+        shopLocation,
+        orderIndices,
+        `${warning} Using estimated distance and time.`
       )
     }
 
     return {
       orderedCustomers: ordered,
-      drivingDistanceMiles: distance,
-      drivingDurationMinutes: Math.round(distance * 3), // rough 20mph estimate
+      drivingDistanceMiles: metrics.distanceMiles,
+      drivingDurationMinutes: metrics.durationMinutes,
       orderIndices,
+      warning,
     }
-  }
-
-  if (!canUseGoogle) {
-    return fallbackNearestNeighbor()
   }
 
   try {
@@ -87,24 +226,24 @@ async function getOptimizedRoute(customers: Array<{ id: string; latitude: number
       throw new Error(`Directions API failed: ${response.status} ${response.statusText}`)
     }
 
-    const data = await response.json()
+    const data = (await response.json()) as DirectionsResponse
     if (data.status !== 'OK' || !data.routes?.[0]) {
       throw new Error(`Directions API error status: ${data.status}`)
     }
 
-    const waypointOrder: number[] = data.routes[0].waypoint_order
+    const waypointOrder = data.routes[0].waypoint_order ?? []
     if (!Array.isArray(waypointOrder) || waypointOrder.length !== customers.length) {
       throw new Error('Directions API returned invalid waypoint_order')
     }
 
     const orderedCustomers = waypointOrder.map((idx) => customers[idx])
-    const legs = data.routes[0].legs || []
+    const legs: DirectionsLeg[] = data.routes[0].legs ?? []
     const totalDistanceMeters = legs.reduce(
-      (sum: number, leg: any) => sum + (leg.distance?.value || 0),
+      (sum, leg) => sum + (leg.distance?.value ?? 0),
       0
     )
     const totalDurationSeconds = legs.reduce(
-      (sum: number, leg: any) => sum + (leg.duration?.value || 0),
+      (sum, leg) => sum + (leg.duration?.value ?? 0),
       0
     )
 
@@ -125,6 +264,7 @@ interface CreateRouteInput {
   day_of_week: string
   date: string
   customers: Array<{ id: string }>
+  driverId?: string | null
 }
 
 interface UpdateRouteStatusInput {
@@ -165,6 +305,26 @@ export async function createRoute(input: CreateRouteInput) {
     return { error: 'No customers found' }
   }
 
+  let driverName: string | null = null
+  if (input.driverId) {
+    const { data: driver, error: driverError } = await supabase
+      .from('crew_members')
+      .select('name')
+      .eq('id', input.driverId)
+      .maybeSingle()
+
+    if (driverError) {
+      console.error('Driver lookup error:', driverError)
+      return { error: 'Failed to assign driver.' }
+    }
+
+    if (!driver) {
+      return { error: 'Selected driver not found.' }
+    }
+
+    driverName = driver.name
+  }
+
   // Optimize order using Google Directions (falls back to nearest-neighbor)
   const shopLocation = await getShopLocation()
 
@@ -173,6 +333,7 @@ export async function createRoute(input: CreateRouteInput) {
     drivingDistanceMiles,
     drivingDurationMinutes,
     orderIndices,
+    warning,
   } = await getOptimizedRoute(customers, shopLocation)
 
   // Use Google's driving time as the estimated route duration (no extra per-stop padding)
@@ -187,6 +348,8 @@ export async function createRoute(input: CreateRouteInput) {
       date: input.date,
       day_of_week: input.day_of_week,
       status: 'planned',
+      driver_id: input.driverId ?? null,
+      driver_name: driverName,
       total_distance_miles: drivingDistanceMiles,
       total_distance_km: drivingDistanceMiles * 1.60934,
       total_duration_minutes: totalDuration,
@@ -228,12 +391,15 @@ export async function createRoute(input: CreateRouteInput) {
   }
 
   revalidatePath('/routes')
-  return { success: true, routeId: route.id }
+  return { success: true, routeId: route.id, warning }
 }
 
 export async function updateRouteStatus(input: UpdateRouteStatusInput) {
-  const supabase = await createClient()
-  const admin = getServiceSupabase()
+  const auth = await requireAuthenticatedClient()
+  if ('error' in auth) {
+    return { error: auth.error }
+  }
+  const supabase = auth.supabase
 
   try {
     interface RouteUpdate {
@@ -261,8 +427,7 @@ export async function updateRouteStatus(input: UpdateRouteStatusInput) {
       updateData.total_duration_minutes = input.totalDurationMinutes
     }
 
-    // Use service role to avoid RLS issues when user session is missing
-    const { data, error } = await admin
+    const { data, error } = await supabase
       .from('routes')
       .update(updateData)
       .eq('id', input.routeId)
@@ -341,15 +506,18 @@ export async function addStopToRoute(input: AddStopInput) {
 
   const stops = route.route_stops || []
   const optimizationInput = [
-    ...stops.map((stop) => ({
-      id: stop.customer_id,
-      latitude: stop.customers?.latitude ?? null,
-      longitude: stop.customers?.longitude ?? null,
-      stopId: stop.id,
-      status: stop.status,
-      estimated_duration_minutes:
-        stop.estimated_duration_minutes ?? SERVICE_TIME_PER_STOP_MIN,
-    })),
+    ...stops.map((stop) => {
+      const stopCustomer = Array.isArray(stop.customers) ? stop.customers[0] : stop.customers
+      return {
+        id: stop.customer_id,
+        latitude: stopCustomer?.latitude ?? null,
+        longitude: stopCustomer?.longitude ?? null,
+        stopId: stop.id,
+        status: stop.status,
+        estimated_duration_minutes:
+          stop.estimated_duration_minutes ?? SERVICE_TIME_PER_STOP_MIN,
+      }
+    }),
     {
       id: customer.id,
       latitude: customer.latitude,
@@ -370,7 +538,7 @@ export async function addStopToRoute(input: AddStopInput) {
 
   const shopLocation = await getShopLocation()
 
-  const { orderedCustomers, drivingDistanceMiles, drivingDurationMinutes, orderIndices } =
+  const { orderedCustomers, drivingDistanceMiles, drivingDurationMinutes, orderIndices, warning } =
     await getOptimizedRoute(optimizationInput, shopLocation)
 
   // Update route metrics
@@ -461,7 +629,57 @@ export async function addStopToRoute(input: AddStopInput) {
   revalidatePath(`/routes/${input.routeId}`)
   revalidatePath('/routes')
 
-  return { success: true }
+  return { success: true, warning }
+}
+
+interface AssignRouteDriverInput {
+  routeId: string
+  driverId: string | null
+}
+
+export async function assignRouteDriver(input: AssignRouteDriverInput) {
+  const supabase = await createClient()
+
+  let driverName: string | null = null
+
+  if (input.driverId) {
+    const { data: driver, error: driverError } = await supabase
+      .from('crew_members')
+      .select('name')
+      .eq('id', input.driverId)
+      .maybeSingle()
+
+    if (driverError) {
+      console.error('Assign driver lookup error:', driverError)
+      return { error: 'Failed to assign driver.' }
+    }
+
+    if (!driver) {
+      return { error: 'Selected driver not found.' }
+    }
+
+    driverName = driver.name
+  }
+
+  const { error } = await supabase
+    .from('routes')
+    .update({
+      driver_id: input.driverId ?? null,
+      driver_name: driverName,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.routeId)
+
+  if (error) {
+    console.error('Assign driver update error:', error)
+    return { error: 'Failed to assign driver.' }
+  }
+
+  revalidatePath(`/routes/${input.routeId}`)
+  revalidatePath('/routes')
+  revalidatePath('/schedule')
+
+  return { success: true, driverName }
 }
 
 export async function updateRouteStop(input: UpdateStopInput) {
@@ -546,8 +764,13 @@ export async function startRoute(routeId: string) {
 }
 
 export async function completeRoute(routeId: string) {
-  const admin = getServiceSupabase()
-  const { data: route, error: routeFetchError } = await admin
+  const auth = await requireAuthenticatedClient()
+  if ('error' in auth) {
+    return { error: auth.error }
+  }
+  const supabase = auth.supabase
+
+  const { data: route, error: routeFetchError } = await supabase
     .from('routes')
     .select('status, start_time')
     .eq('id', routeId)
@@ -573,7 +796,7 @@ export async function completeRoute(routeId: string) {
 
   if (result.success) {
     // Record the actual duration for analytics
-    const { error: rtError } = await admin.from('route_times').insert({
+    const { error: rtError } = await supabase.from('route_times').insert({
       route_id: routeId,
       started_at: startIso,
       ended_at: endTime,
@@ -586,7 +809,7 @@ export async function completeRoute(routeId: string) {
     }
 
     // Update the stored average on routes (in case trigger fails/lagging)
-    const { data: avgRows, error: avgError } = await admin
+    const { data: avgRows, error: avgError } = await supabase
       .from('route_times')
       .select('duration_minutes')
       .eq('route_id', routeId)
@@ -597,7 +820,7 @@ export async function completeRoute(routeId: string) {
         .filter((v): v is number => v !== null)
       if (durations.length > 0) {
         const avg = durations.reduce((a, b) => a + b, 0) / durations.length
-        const { error: avgUpdateError } = await admin
+        const { error: avgUpdateError } = await supabase
           .from('routes')
           .update({ average_duration_minutes: avg })
           .eq('id', routeId)

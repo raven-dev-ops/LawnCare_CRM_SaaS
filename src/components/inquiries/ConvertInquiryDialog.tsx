@@ -22,7 +22,7 @@ interface ConvertInquiryDialogProps {
   inquiry: Inquiry | null
 }
 
-const DAYS_OF_WEEK: Customer['day'][] = [
+const DAYS_OF_WEEK = [
   'Monday',
   'Tuesday',
   'Wednesday',
@@ -30,7 +30,7 @@ const DAYS_OF_WEEK: Customer['day'][] = [
   'Friday',
   'Saturday',
   'Sunday',
-]
+] as const
 
 export function ConvertInquiryDialog({
   open,
@@ -38,7 +38,7 @@ export function ConvertInquiryDialog({
   inquiry,
 }: ConvertInquiryDialogProps) {
   const [type, setType] = useState<Customer['type']>('Residential')
-  const [day, setDay] = useState<string>('unscheduled')
+  const [day, setDay] = useState<'unscheduled' | (typeof DAYS_OF_WEEK)[number]>('unscheduled')
   const [cost, setCost] = useState<string>('0')
   const [isPending, startTransition] = useTransition()
 
@@ -113,7 +113,7 @@ export function ConvertInquiryDialog({
               <label className="text-sm font-medium">Service Day</label>
               <Select
                 value={day}
-                onValueChange={setDay}
+                onValueChange={(value) => setDay(value as 'unscheduled' | (typeof DAYS_OF_WEEK)[number])}
               >
                 <SelectTrigger>
                   <SelectValue />

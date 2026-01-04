@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { geocodeAddress } from '@/lib/geocoding'
 import { getShopLocation } from '@/lib/settings'
 import { haversineMilesKm } from '@/lib/geo'
-import type { Inquiry, Customer } from '@/types/database.types'
+import type { Inquiry, InquiryUpdate, Customer } from '@/types/database.types'
 
 type InquiryStatus = Inquiry['status']
 
@@ -18,7 +18,7 @@ interface UpdateInquiryDetailsInput {
 export async function updateInquiryDetails(input: UpdateInquiryDetailsInput) {
   const supabase = await createClient()
 
-  const updates: Partial<Inquiry> = {}
+  const updates: InquiryUpdate = {}
 
   if (input.quoteAmount !== undefined) {
     updates.quote_amount = input.quoteAmount
@@ -51,12 +51,12 @@ export async function updateInquiryDetails(input: UpdateInquiryDetailsInput) {
 export async function updateInquiryStatus(id: string, status: InquiryStatus) {
   const supabase = await createClient()
 
-  const updates: Partial<Inquiry> = {
+  const updates: InquiryUpdate = {
     status,
   }
 
   if (status === 'contacted') {
-    ;(updates as any).contacted_at = new Date().toISOString()
+    updates.contacted_at = new Date().toISOString()
   }
 
   const { error } = await supabase

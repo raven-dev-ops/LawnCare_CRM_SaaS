@@ -30,10 +30,31 @@ type ScheduleRoute = {
   date?: string | null
   day_of_week?: string | null
   status: string
+  driver_id?: string | null
+  driver_name?: string | null
   total_distance_miles?: number | null
   total_duration_minutes?: number | null
   estimated_fuel_cost?: number | null
   route_stops?: ScheduleStop[]
+}
+
+type RecurringPlan = {
+  id: string
+  frequency: string
+  custom_cost?: number | null
+  start_date?: string | null
+  next_service_date?: string | null
+  active?: boolean
+  customer?: {
+    id?: string
+    name?: string | null
+    address?: string | null
+  } | null
+  service?: {
+    id?: string
+    name?: string | null
+    base_cost?: number | null
+  } | null
 }
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -46,6 +67,8 @@ function sortByDate(a?: string | null, b?: string | null) {
 
 interface ScheduleBoardProps {
   routes: ScheduleRoute[]
+  recurringPlans?: RecurringPlan[]
+  crewMembers?: Array<{ id: string; name: string; active?: boolean }>
 }
 
 function formatCurrency(value: number | undefined | null) {
@@ -65,14 +88,29 @@ const statusColors: Record<string, string> = {
   completed: 'bg-emerald-100 text-emerald-700',
 }
 
-export function ScheduleBoard({ routes }: ScheduleBoardProps) {
+const FREQUENCY_LABELS: Record<string, string> = {
+  once: 'One-time',
+  weekly: 'Weekly',
+  'bi-weekly': 'Bi-weekly',
+  monthly: 'Monthly',
+  quarterly: 'Quarterly',
+  seasonal: 'Seasonal',
+  yearly: 'Yearly',
+}
+
+export function ScheduleBoard({ routes, recurringPlans, crewMembers }: ScheduleBoardProps) {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
+  const [crewFilter, setCrewFilter] = useState<string>('all')
 
   const filteredRoutes = useMemo(() => {
     const query = search.trim().toLowerCase()
     return routes.filter((route) => {
       if (statusFilter !== 'all' && route.status !== statusFilter) return false
+      const matchesCrew =
+        crewFilter === 'all' ||
+        (crewFilter === 'unassigned' ? !route.driver_id : route.driver_id === crewFilter)
+      if (!matchesCrew) return false
       if (!query) return true
       const stops = route.route_stops || []
       return stops.some((stop) => {
@@ -81,7 +119,22 @@ export function ScheduleBoard({ routes }: ScheduleBoardProps) {
         return name.includes(query) || address.includes(query)
       })
     })
-  }, [routes, statusFilter, search])
+  }, [routes, statusFilter, search, crewFilter])
+
+  const recurringByDate = useMemo(() => {
+    const recurringPlansList = recurringPlans || []
+    if (recurringPlansList.length === 0) return []
+    const grouped: Record<string, RecurringPlan[]> = {}
+
+    recurringPlansList.forEach((plan) => {
+      const date = plan.next_service_date || plan.start_date
+      if (!date) return
+      if (!grouped[date]) grouped[date] = []
+      grouped[date].push(plan)
+    })
+
+    return Object.entries(grouped).sort(([a], [b]) => sortByDate(a, b))
+  }, [recurringPlans])
 
   const grouped = useMemo(() => {
     const byDay: Record<string, ScheduleRoute[]> = {}
@@ -171,6 +224,22 @@ export function ScheduleBoard({ routes }: ScheduleBoardProps) {
                   <SelectItem value="completed">Completed</SelectItem>
                 </SelectContent>
               </Select>
+              {crewMembers && crewMembers.length > 0 && (
+                <Select value={crewFilter} onValueChange={setCrewFilter}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Driver" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Drivers</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {crewMembers.map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -243,6 +312,9 @@ export function ScheduleBoard({ routes }: ScheduleBoardProps) {
                                   {formatDate(route.date)}
                                 </div>
                               )}
+                              {route.driver_name && (
+                                <div className="text-xs text-slate-500">Driver: {route.driver_name}</div>
+                              )}
                               <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-600">
                                 <span className="inline-flex items-center gap-1">
                                   <MapPin className="h-4 w-4" />
@@ -287,6 +359,58 @@ export function ScheduleBoard({ routes }: ScheduleBoardProps) {
               </div>
             </CardContent>
           </Card>
+          {recurringByDate.length > 0 && (
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarRange className="h-5 w-5" />
+                  Recurring Services
+                </CardTitle>
+                <CardDescription>Upcoming plans in the next 7 days</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {recurringByDate.map(([date, plans]) => (
+                  <div key={date} className="space-y-2">
+                    <div className="text-xs font-semibold text-slate-600">{formatDate(date)}</div>
+                    <div className="space-y-2">
+                      {plans.map((plan) => {
+                        const label = FREQUENCY_LABELS[plan.frequency] || plan.frequency
+                        const cost =
+                          plan.custom_cost != null
+                            ? formatCurrency(plan.custom_cost)
+                            : plan.service?.base_cost != null
+                            ? formatCurrency(plan.service.base_cost)
+                            : 'N/A'
+
+                        return (
+                          <div key={plan.id} className="rounded-md border bg-white p-3 text-sm">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div>
+                                <div className="font-medium">{plan.service?.name || 'Service'}</div>
+                                <div className="text-xs text-slate-500">
+                                  {plan.customer?.name || 'Customer'}
+                                  {plan.customer?.address ? `  - ${plan.customer.address}` : ''}
+                                </div>
+                                <div className="text-xs text-slate-500">{label}</div>
+                              </div>
+                              <div className="text-xs text-slate-600">{cost}</div>
+                            </div>
+                            {plan.customer?.id && (
+                              <div className="mt-2 text-xs">
+                                <Link href={`/customers/${plan.customer.id}`} className="text-emerald-600 hover:underline">
+                                  View customer
+                                </Link>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

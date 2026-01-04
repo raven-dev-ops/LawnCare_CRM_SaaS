@@ -10,28 +10,38 @@ import { useRole } from '@/components/auth/RoleProvider'
 import {
   LayoutDashboard,
   Users,
+  UserCog,
   MapPin,
   Calendar,
+  Receipt,
   BarChart3,
   Settings,
   Inbox,
   LogIn,
   LogOut,
   Wrench,
+  X,
 } from 'lucide-react'
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Customers', href: '/customers', icon: Users },
+  { name: 'Crew', href: '/crew', icon: UserCog },
   { name: 'Services', href: '/services', icon: Wrench },
   { name: 'Routes', href: '/routes', icon: MapPin },
   { name: 'Schedule', href: '/schedule', icon: Calendar },
+  { name: 'Invoices', href: '/invoices', icon: Receipt },
   { name: 'Inquiries', href: '/inquiries', icon: Inbox },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings, requiresAdmin: true },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+export function Sidebar({ isOpen = false, onOpenChange }: SidebarProps) {
   const pathname = usePathname() || '/'
   const router = useRouter()
   const { role, isAdmin, isLoading: isRoleLoading } = useRole()
@@ -87,21 +97,38 @@ export function Sidebar() {
       setIsSigningOut(false)
       return
     }
+    closeSidebar()
     router.push('/login')
     router.refresh()
   }
 
-  return (
-    <div className="flex h-full w-64 flex-col bg-gradient-to-b from-slate-900 to-slate-800 border-r border-slate-700">
+  const closeSidebar = () => onOpenChange?.(false)
+
+  const sidebarContent = (
+    <>
       {/* Logo */}
-      <div className="flex h-16 items-center gap-2 border-b border-slate-700 px-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500">
-          <MapPin className="h-6 w-6 text-white" />
+      <div className="flex h-16 items-center justify-between gap-2 border-b border-slate-700 px-6">
+        <div className="flex items-center gap-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500">
+            <MapPin className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-white">GreenRoute</h1>
+            <p className="text-xs text-slate-400">Lawn Care CRM</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-lg font-bold text-white">GreenRoute</h1>
-          <p className="text-xs text-slate-400">Lawn Care CRM</p>
-        </div>
+        {onOpenChange ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="md:hidden text-slate-200 hover:text-white hover:bg-slate-700/70"
+            onClick={closeSidebar}
+            aria-label="Close navigation"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        ) : null}
       </div>
 
       {/* Navigation */}
@@ -118,6 +145,7 @@ export function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={closeSidebar}
               className={cn(
                 'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
                 isActive
@@ -172,7 +200,7 @@ export function Sidebar() {
               variant="ghost"
               className="w-full justify-start text-slate-200 hover:text-white hover:bg-slate-700/70"
             >
-              <Link href="/login">
+              <Link href="/login" onClick={closeSidebar}>
                 <LogIn className="h-4 w-4" />
                 Sign in
               </Link>
@@ -180,6 +208,43 @@ export function Sidebar() {
           )}
         </div>
       </div>
-    </div>
+    </>
+  )
+
+  const baseSidebarClass =
+    'flex h-full flex-col bg-gradient-to-b from-slate-900 to-slate-800 border-r border-slate-700'
+
+  return (
+    <>
+      <aside className={cn(baseSidebarClass, 'hidden w-64 md:flex')}>
+        {sidebarContent}
+      </aside>
+      <div
+        className={cn(
+          'fixed inset-0 z-40 md:hidden',
+          isOpen ? 'visible' : 'invisible pointer-events-none'
+        )}
+      >
+        <div
+          className={cn(
+            'absolute inset-0 bg-black/50 transition-opacity',
+            isOpen ? 'opacity-100' : 'opacity-0'
+          )}
+          onClick={closeSidebar}
+          role="button"
+          tabIndex={-1}
+          aria-label="Close navigation overlay"
+        />
+        <aside
+          className={cn(
+            baseSidebarClass,
+            'relative h-full w-72 max-w-[80%] transform transition-transform',
+            isOpen ? 'translate-x-0' : '-translate-x-full'
+          )}
+        >
+          {sidebarContent}
+        </aside>
+      </div>
+    </>
   )
 }

@@ -401,6 +401,144 @@ export interface Database {
           updated_at?: string
         }
       }
+      invoices: {
+        Row: {
+          id: string
+          customer_id: string
+          invoice_number: number
+          status: 'draft' | 'sent' | 'partial' | 'paid' | 'overdue' | 'void'
+          issue_date: string
+          due_date: string | null
+          currency: string
+          subtotal: number
+          tax: number
+          total: number
+          amount_paid: number
+          notes: string | null
+          stripe_invoice_id: string | null
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          customer_id: string
+          invoice_number?: number
+          status?: 'draft' | 'sent' | 'partial' | 'paid' | 'overdue' | 'void'
+          issue_date?: string
+          due_date?: string | null
+          currency?: string
+          subtotal?: number
+          tax?: number
+          total?: number
+          amount_paid?: number
+          notes?: string | null
+          stripe_invoice_id?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          customer_id?: string
+          invoice_number?: number
+          status?: 'draft' | 'sent' | 'partial' | 'paid' | 'overdue' | 'void'
+          issue_date?: string
+          due_date?: string | null
+          currency?: string
+          subtotal?: number
+          tax?: number
+          total?: number
+          amount_paid?: number
+          notes?: string | null
+          stripe_invoice_id?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      invoice_line_items: {
+        Row: {
+          id: string
+          invoice_id: string
+          product_id: string | null
+          description: string
+          quantity: number
+          unit_price: number
+          total: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          invoice_id: string
+          product_id?: string | null
+          description: string
+          quantity?: number
+          unit_price?: number
+          total?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          invoice_id?: string
+          product_id?: string | null
+          description?: string
+          quantity?: number
+          unit_price?: number
+          total?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      payments: {
+        Row: {
+          id: string
+          invoice_id: string
+          amount: number
+          currency: string
+          method: 'cash' | 'check' | 'card' | 'bank_transfer' | 'stripe' | 'manual' | 'other'
+          status: 'pending' | 'succeeded' | 'failed' | 'refunded'
+          paid_at: string | null
+          reference: string | null
+          stripe_payment_intent_id: string | null
+          stripe_charge_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          invoice_id: string
+          amount: number
+          currency?: string
+          method?: 'cash' | 'check' | 'card' | 'bank_transfer' | 'stripe' | 'manual' | 'other'
+          status?: 'pending' | 'succeeded' | 'failed' | 'refunded'
+          paid_at?: string | null
+          reference?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_charge_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          invoice_id?: string
+          amount?: number
+          currency?: string
+          method?: 'cash' | 'check' | 'card' | 'bank_transfer' | 'stripe' | 'manual' | 'other'
+          status?: 'pending' | 'succeeded' | 'failed' | 'refunded'
+          paid_at?: string | null
+          reference?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_charge_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       inquiry_rate_limits: {
         Row: {
           ip: string
@@ -418,6 +556,73 @@ export interface Database {
           ip?: string
           window_start?: string
           request_count?: number
+          updated_at?: string
+        }
+      }
+      google_sheets_connections: {
+        Row: {
+          id: string
+          singleton: boolean
+          access_token: string | null
+          refresh_token: string | null
+          scope: string | null
+          token_type: string | null
+          expiry_date: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          singleton?: boolean
+          access_token?: string | null
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          expiry_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          singleton?: boolean
+          access_token?: string | null
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          expiry_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      crew_members: {
+        Row: {
+          id: string
+          name: string
+          email: string | null
+          phone: string | null
+          role: string
+          active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          email?: string | null
+          phone?: string | null
+          role?: string
+          active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          email?: string | null
+          phone?: string | null
+          role?: string
+          active?: boolean
+          created_at?: string
           updated_at?: string
         }
       }
@@ -633,6 +838,7 @@ export type CustomerProduct = Database['public']['Tables']['customer_products'][
 export type CustomerProductInsert = Database['public']['Tables']['customer_products']['Insert']
 export type CustomerProductUpdate = Database['public']['Tables']['customer_products']['Update']
 
+export type CrewMember = Database['public']['Tables']['crew_members']['Row']
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
@@ -661,9 +867,25 @@ export type Inquiry = Database['public']['Tables']['inquiries']['Row']
 export type InquiryInsert = Database['public']['Tables']['inquiries']['Insert']
 export type InquiryUpdate = Database['public']['Tables']['inquiries']['Update']
 
+export type Invoice = Database['public']['Tables']['invoices']['Row']
+export type InvoiceInsert = Database['public']['Tables']['invoices']['Insert']
+export type InvoiceUpdate = Database['public']['Tables']['invoices']['Update']
+
+export type InvoiceLineItem = Database['public']['Tables']['invoice_line_items']['Row']
+export type InvoiceLineItemInsert = Database['public']['Tables']['invoice_line_items']['Insert']
+export type InvoiceLineItemUpdate = Database['public']['Tables']['invoice_line_items']['Update']
+
+export type Payment = Database['public']['Tables']['payments']['Row']
+export type PaymentInsert = Database['public']['Tables']['payments']['Insert']
+export type PaymentUpdate = Database['public']['Tables']['payments']['Update']
+
 export type InquiryRateLimit = Database['public']['Tables']['inquiry_rate_limits']['Row']
 export type InquiryRateLimitInsert = Database['public']['Tables']['inquiry_rate_limits']['Insert']
 export type InquiryRateLimitUpdate = Database['public']['Tables']['inquiry_rate_limits']['Update']
+
+export type GoogleSheetsConnection = Database['public']['Tables']['google_sheets_connections']['Row']
+export type GoogleSheetsConnectionInsert = Database['public']['Tables']['google_sheets_connections']['Insert']
+export type GoogleSheetsConnectionUpdate = Database['public']['Tables']['google_sheets_connections']['Update']
 
 export type CustomerMetric = Database['public']['Views']['customer_metrics']['Row']
 export type RouteStatistic = Database['public']['Views']['route_statistics']['Row']

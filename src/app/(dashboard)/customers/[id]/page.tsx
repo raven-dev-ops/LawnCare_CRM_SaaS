@@ -2,10 +2,11 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
-import type { Customer } from '@/types/database.types'
+import type { Customer, ServiceHistory } from '@/types/database.types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CustomerDetailActions } from '@/components/customers/CustomerDetailActions'
 import { ServiceHistoryPanel } from '@/components/customers/ServiceHistoryPanel'
+import { CustomerServicePlansPanel } from '@/components/customers/CustomerServicePlansPanel'
 import { Calendar, MapPin, Ruler } from 'lucide-react'
 
 const DAY_COLORS: Record<string, string> = {
@@ -54,16 +55,65 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
   const { data: serviceHistory } = await supabase
     .from('service_history')
-    .select('id, service_date, service_type, cost, duration_minutes, notes')
+    .select('*')
     .eq('customer_id', id)
     .order('service_date', { ascending: false })
     .limit(10)
+
+  const serviceHistoryEntries = (serviceHistory || []) as ServiceHistory[]
 
   const { data: routeStops } = await supabase
     .from('route_stops')
     .select('id, stop_order, status, route:routes (id, name, day_of_week, date, status)')
     .eq('customer_id', id)
     .order('created_at', { ascending: false })
+
+  const normalizedRouteStops: Array<{
+    id: string
+    stop_order: number | null
+    status: string
+    route: {
+      id: string
+      name: string | null
+      day_of_week: string
+      date: string
+      status: string
+    } | null
+  }> = (routeStops || []).map((stop) => ({
+    ...stop,
+    route: Array.isArray(stop.route) ? stop.route[0] : stop.route,
+  }))
+
+  const { data: servicePlans } = await supabase
+    .from('customer_products')
+    .select(`
+      id,
+      frequency,
+      custom_cost,
+      start_date,
+      end_date,
+      auto_renew,
+      active,
+      next_service_date,
+      service:products_services (
+        id,
+        name,
+        base_cost
+      )
+    `)
+    .eq('customer_id', id)
+    .order('created_at', { ascending: false })
+
+  const normalizedServicePlans = (servicePlans || []).map((plan) => ({
+    ...plan,
+    service: Array.isArray(plan.service) ? plan.service[0] : plan.service,
+  }))
+
+  const { data: services } = await supabase
+    .from('products_services')
+    .select('id, name, base_cost')
+    .eq('active', true)
+    .order('name')
 
   const dayLabel = customerRecord.day || 'Unscheduled'
   const dayBadgeClass = DAY_COLORS[dayLabel] || 'bg-slate-100 text-slate-700'
@@ -176,7 +226,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
       <div className="grid gap-6 lg:grid-cols-2">
         <ServiceHistoryPanel
           customerId={customerRecord.id}
-          entries={serviceHistory || []}
+          entries={serviceHistoryEntries}
         />
 
         <Card>
@@ -185,11 +235,11 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
             <CardDescription>Where this customer appears on routes</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {!routeStops || routeStops.length === 0 ? (
+            {normalizedRouteStops.length === 0 ? (
               <p className="text-sm text-muted-foreground">No routes yet.</p>
             ) : (
               <div className="space-y-3">
-                {routeStops.map((stop) => (
+                {normalizedRouteStops.map((stop) => (
                   <div key={stop.id} className="rounded-lg border p-3 text-sm">
                     <div className="flex items-center justify-between">
                       <div className="font-medium">
@@ -234,17 +284,11 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Attachments</CardTitle>
-            <CardDescription>Photos and files</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Attachments support is coming soon.
-            </p>
-          </CardContent>
-        </Card>
+        <CustomerServicePlansPanel
+          customerId={customerRecord.id}
+          plans={normalizedServicePlans}
+          services={services || []}
+        />
       </div>
     </div>
   )

@@ -84,6 +84,14 @@ export async function getShopLocation(): Promise<ShopLocation> {
 }
 
 export async function getBusinessProfile() {
+  if (process.env.SUPABASE_AUTH_DISABLED === 'true') {
+    return {
+      name: DEFAULT_SETTINGS.businessName,
+      email: DEFAULT_SETTINGS.businessEmail,
+      phone: DEFAULT_SETTINGS.businessPhone,
+    }
+  }
+
   const supabase = await createClient()
 
   const { data, error } = await supabase.rpc('get_public_business_profile')

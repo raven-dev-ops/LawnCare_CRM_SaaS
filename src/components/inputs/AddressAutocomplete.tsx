@@ -67,18 +67,19 @@ function AddressAutocompleteInner({
 
 export function AddressAutocomplete({ showMissingKeyHint = true, ...props }: AddressAutocompleteProps) {
   const apiKey = GOOGLE_MAPS_BROWSER_API_KEY
+  const { value, onChange, ...rest } = props
 
   return (
     <div className="space-y-1">
       {apiKey ? (
         <APIProvider apiKey={apiKey} libraries={['places']}>
-          <AddressAutocompleteInner {...props} />
+          <AddressAutocompleteInner value={value} onChange={onChange} {...rest} />
         </APIProvider>
       ) : (
         <Input
-          value={props.value}
-          onChange={(e) => props.onChange(e.target.value)}
-          {...props}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          {...rest}
         />
       )}
       {!apiKey && showMissingKeyHint && (

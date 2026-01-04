@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import LoginForm from '@/components/auth/LoginForm'
 
 const DEFAULT_REDIRECT = '/'
+const SUPABASE_AUTH_DISABLED = process.env.SUPABASE_AUTH_DISABLED === 'true'
 
 type LoginPageProps = {
   searchParams?: {
@@ -19,13 +20,15 @@ function getSafeRedirect(target?: string) {
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const supabase = await createClient()
-  const { data } = await supabase.auth.getUser()
-
   const redirectTo = getSafeRedirect(searchParams?.redirectedFrom)
 
-  if (data.user) {
-    redirect(redirectTo)
+  if (!SUPABASE_AUTH_DISABLED) {
+    const supabase = await createClient()
+    const { data } = await supabase.auth.getUser()
+
+    if (data.user) {
+      redirect(redirectTo)
+    }
   }
 
   const message =

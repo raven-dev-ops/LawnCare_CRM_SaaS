@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select'
 import { updateInquiryStatus } from '@/app/(dashboard)/inquiries/actions'
 import { Loader2, UserPlus } from 'lucide-react'
+import Link from 'next/link'
 import { ConvertInquiryDialog } from './ConvertInquiryDialog'
 import { toast } from 'sonner'
 
@@ -144,12 +145,12 @@ export function InquiriesTable({ inquiries }: InquiriesTableProps) {
               <TableRow key={inq.id}>
                 <TableCell className="align-top">
                   <div className="font-medium">
-                    <a
+                    <Link
                       href={`/inquiries/${inq.id}`}
                       className="hover:underline underline-offset-2"
                     >
                       {inq.name}
-                    </a>
+                    </Link>
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {inq.email}
@@ -164,7 +165,7 @@ export function InquiriesTable({ inquiries }: InquiriesTableProps) {
                   <div>{inq.address}</div>
                   <div className="text-xs mt-1">
                     {inq.property_type || 'Property type not specified'}
-                    {inq.lot_size ? ` · ${inq.lot_size}` : ''}
+                    {inq.lot_size ? ` - ${inq.lot_size}` : ''}
                   </div>
                   {inq.notes && (
                     <div className="mt-1 text-xs line-clamp-2">
@@ -234,10 +235,10 @@ export function InquiriesTable({ inquiries }: InquiriesTableProps) {
                     )}
                     {inq.converted_customer_id && (
                       <div className="mt-1 text-xs text-muted-foreground">
-                        Linked to customer ·{' '}
-                        <a href="/customers" className="underline-offset-2 hover:underline">
+                        Linked to customer -{' '}
+                        <Link href="/customers" className="underline-offset-2 hover:underline">
                           View in Customers
-                        </a>
+                        </Link>
                       </div>
                     )}
                   </div>
@@ -245,7 +246,7 @@ export function InquiriesTable({ inquiries }: InquiriesTableProps) {
                 <TableCell className="align-top text-right text-xs text-muted-foreground">
                   {inq.created_at
                     ? new Date(inq.created_at).toLocaleDateString()
-                    : '—'}
+                    : '--'}
                 </TableCell>
               </TableRow>
             ))}

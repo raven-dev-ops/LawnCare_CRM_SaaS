@@ -22,9 +22,41 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
+type CustomerSummary = {
+  name?: string | null
+  cost?: number | null
+  additional_work_cost?: number | null
+}
+
+type RouteStopSummary = {
+  id: string
+  customer?: CustomerSummary | CustomerSummary[] | null
+}
+
+type RouteSummary = {
+  id: string
+  name?: string | null
+  date: string
+  day_of_week: string
+  status: string
+  driver_id?: string | null
+  driver_name?: string | null
+  total_distance_miles?: number | null
+  total_duration_minutes?: number | null
+  estimated_fuel_cost?: number | null
+  route_stops?: RouteStopSummary[] | null
+}
+
+type CrewMember = {
+  id: string
+  name: string
+  active?: boolean
+}
+
 interface RoutesOverviewProps {
-  routes: any[]
-  unscheduledCustomers: any[]
+  routes: RouteSummary[]
+  unscheduledCustomers: Array<{ id: string }>
+  crewMembers: CrewMember[]
   routesError?: boolean
   unscheduledError?: boolean
 }
@@ -39,16 +71,25 @@ const DAYS_OF_WEEK = [
   'Sunday',
 ]
 
-const STATUS_OPTIONS = ['planned', 'in_progress', 'completed', 'cancelled'] as const
+const STATUS_OPTIONS = [
+  { value: 'planned', label: 'Planned' },
+  { value: 'in_progress', label: 'In progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+] as const
+
+type StatusValue = (typeof STATUS_OPTIONS)[number]['value']
 
 export function RoutesOverview({
   routes,
   unscheduledCustomers,
+  crewMembers,
   routesError,
   unscheduledError,
 }: RoutesOverviewProps) {
   const [dayFilter, setDayFilter] = useState<'all' | string>('all')
-  const [statusFilter, setStatusFilter] = useState<'all' | (typeof STATUS_OPTIONS)[number]>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | StatusValue>('all')
+  const [crewFilter, setCrewFilter] = useState<string>('all')
 
   const getDayColor = (day: string) => {
     const colors: Record<string, string> = {
@@ -63,6 +104,13 @@ export function RoutesOverview({
     return colors[day] || 'bg-gray-100 text-gray-700 border-gray-300'
   }
 
+  const getStopCustomer = (stop: RouteStopSummary) => {
+    if (Array.isArray(stop.customer)) {
+      return stop.customer[0] || null
+    }
+    return stop.customer || null
+  }
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       planned: 'bg-blue-100 text-blue-700',
@@ -75,62 +123,52 @@ export function RoutesOverview({
 
   const filteredRoutes = useMemo(() => {
     return (routes || []).filter((route) => {
-      const matchesDay =
-        dayFilter === 'all' || route.day_of_week === dayFilter
-      const matchesStatus =
-        statusFilter === 'all' || route.status === statusFilter
-      return matchesDay && matchesStatus
+      const matchesDay = dayFilter === 'all' || route.day_of_week === dayFilter
+      const matchesStatus = statusFilter === 'all' || route.status === statusFilter
+      const matchesCrew =
+        crewFilter === 'all' ||
+        (crewFilter === 'unassigned' ? !route.driver_id : route.driver_id === crewFilter)
+      return matchesDay && matchesStatus && matchesCrew
     })
-  }, [routes, dayFilter, statusFilter])
+  }, [routes, dayFilter, statusFilter, crewFilter])
 
-  const routesByDay: Record<string, any[]> = useMemo(() => {
-    const grouped: Record<string, any[]> = {}
+  const routesByDay: Record<string, RouteSummary[]> = useMemo(() => {
+    const grouped: Record<string, RouteSummary[]> = {}
     filteredRoutes.forEach((route) => {
-      const day = route.day_of_week as string
+      const day = route.day_of_week
       if (!grouped[day]) grouped[day] = []
-      grouped[day]!.push(route)
+      grouped[day].push(route)
     })
     return grouped
   }, [filteredRoutes])
 
-  const totalStops =
-    filteredRoutes.reduce(
-      (sum: number, r: any) => sum + (r.route_stops?.length || 0),
-      0
-    ) || 0
+  const totalStops = filteredRoutes.reduce(
+    (sum, route) => sum + (route.route_stops?.length || 0),
+    0
+  )
 
-  const totalDistance =
-    filteredRoutes.reduce(
-      (sum: number, r: any) => sum + (Number(r.total_distance_miles) || 0),
-      0
-    ) || 0
+  const totalDistance = filteredRoutes.reduce(
+    (sum, route) => sum + (Number(route.total_distance_miles) || 0),
+    0
+  )
 
-  const totalRevenue =
-    filteredRoutes.reduce((sum: number, r: any) => {
-      const routeRevenue =
-        r.route_stops?.reduce(
-          (
-            stopSum: number,
-            stop: { customer?: { cost?: number; additional_work_cost?: number } }
-          ) => {
-            const base = Number(stop.customer?.cost || 0)
-            const extra = Number(stop.customer?.additional_work_cost || 0)
-            return stopSum + base + extra
-          },
-          0
-        ) || 0
+  const totalRevenue = filteredRoutes.reduce((sum, route) => {
+    const routeRevenue =
+      route.route_stops?.reduce((stopSum, stop) => {
+        const customer = getStopCustomer(stop)
+        const base = Number(customer?.cost || 0)
+        const extra = Number(customer?.additional_work_cost || 0)
+        return stopSum + base + extra
+      }, 0) || 0
 
-      return sum + routeRevenue
-    }, 0) || 0
+    return sum + routeRevenue
+  }, 0)
 
   const todayIso = new Date().toISOString().split('T')[0]
-  const todayRoutes = (routes || []).filter(
-    (r: any) => r.date === todayIso
-  )
+  const todayRoutes = (routes || []).filter((route) => route.date === todayIso)
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
       <div className="border-b bg-white px-8 py-6">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -169,16 +207,13 @@ export function RoutesOverview({
           </Card>
         )}
 
-        {/* Filters + Stats */}
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <span>Day:</span>
               <Select
                 value={dayFilter}
-                onValueChange={(value) =>
-                  setDayFilter(value as 'all' | string)
-                }
+                onValueChange={(value) => setDayFilter(value as 'all' | string)}
               >
                 <SelectTrigger className="h-8 w-[160px]">
                   <SelectValue placeholder="All days" />
@@ -198,9 +233,7 @@ export function RoutesOverview({
               <Select
                 value={statusFilter}
                 onValueChange={(value) =>
-                  setStatusFilter(
-                    value as 'all' | (typeof STATUS_OPTIONS)[number]
-                  )
+                  setStatusFilter(value as 'all' | StatusValue)
                 }
               >
                 <SelectTrigger className="h-8 w-[180px]">
@@ -208,13 +241,33 @@ export function RoutesOverview({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="planned">Planned</SelectItem>
-                  <SelectItem value="in_progress">In progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  {STATUS_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
+            {crewMembers.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span>Driver:</span>
+                <Select value={crewFilter} onValueChange={setCrewFilter}>
+                  <SelectTrigger className="h-8 w-[200px]">
+                    <SelectValue placeholder="All drivers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All drivers</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {crewMembers.map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-4">
@@ -250,9 +303,7 @@ export function RoutesOverview({
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">${totalRevenue.toFixed(0)}</div>
-                <p className="text-xs text-muted-foreground">
-                  From filtered routes
-                </p>
+                <p className="text-xs text-muted-foreground">From filtered routes</p>
               </CardContent>
             </Card>
 
@@ -262,9 +313,7 @@ export function RoutesOverview({
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {unscheduledCustomers.length}
-                </div>
+                <div className="text-2xl font-bold">{unscheduledCustomers.length}</div>
                 <p className="text-xs text-muted-foreground">Customers to assign</p>
               </CardContent>
             </Card>
@@ -272,7 +321,6 @@ export function RoutesOverview({
         </div>
       </div>
 
-      {/* Routes Grid */}
       <div className="flex-1 overflow-auto bg-slate-50 p-8">
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 max-w-7xl mx-auto">
           {DAYS_OF_WEEK.map((day) => {
@@ -298,9 +346,7 @@ export function RoutesOverview({
                   <CardContent>
                     <div className="py-8 text-center">
                       <MapPin className="mx-auto h-8 w-8 text-muted-foreground/30" />
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        No route planned
-                      </p>
+                      <p className="mt-2 text-xs text-muted-foreground">No route planned</p>
                       <Button
                         variant="outline"
                         size="sm"
@@ -322,21 +368,14 @@ export function RoutesOverview({
             const routeDistance = Number(mainRoute.total_distance_miles) || 0
             const totalDuration = Number(mainRoute.total_duration_minutes) || 0
             const routeRevenue =
-              mainRoute.route_stops?.reduce(
-                (
-                  sum: number,
-                  stop: {
-                    customer?: { cost?: number; additional_work_cost?: number }
-                  }
-                ) => {
-                  return (
-                    sum +
-                    Number(stop.customer?.cost || 0) +
-                    Number(stop.customer?.additional_work_cost || 0)
-                  )
-                },
-                0
-              ) || 0
+              mainRoute.route_stops?.reduce((sum, stop) => {
+                const customer = getStopCustomer(stop)
+                return (
+                  sum +
+                  Number(customer?.cost || 0) +
+                  Number(customer?.additional_work_cost || 0)
+                )
+              }, 0) || 0
 
             return (
               <Link key={day} href={`/routes/${mainRoute.id}`}>
@@ -361,7 +400,14 @@ export function RoutesOverview({
                       </div>
                     </div>
                     {mainRoute.name && (
-                      <div className="text-xs text-muted-foreground truncate">{mainRoute.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {mainRoute.name}
+                      </div>
+                    )}
+                    {mainRoute.driver_name && (
+                      <div className="text-xs text-muted-foreground">
+                        Driver: {mainRoute.driver_name}
+                      </div>
                     )}
                     <CardDescription className="text-xs flex items-center gap-1">
                       <Clock className="h-3 w-3" />
@@ -372,65 +418,45 @@ export function RoutesOverview({
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Revenue</span>
-                        <span className="font-medium">
-                          ${routeRevenue.toFixed(2)}
-                        </span>
+                        <span className="font-medium">${routeRevenue.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Distance</span>
-                        <span className="font-medium">
-                          {routeDistance.toFixed(1)} mi
-                        </span>
+                        <span className="font-medium">{routeDistance.toFixed(1)} mi</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Avg $/stop</span>
                         <span className="font-medium">
-                          $
-                          {stopCount > 0
-                            ? (routeRevenue / stopCount).toFixed(2)
-                            : '0.00'}
+                          ${stopCount > 0 ? (routeRevenue / stopCount).toFixed(2) : '0.00'}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Fuel Cost</span>
                         <span className="font-medium">
-                          $
-                          {(Number(mainRoute.estimated_fuel_cost) || 0).toFixed(
-                            2
-                          )}
+                          ${(Number(mainRoute.estimated_fuel_cost) || 0).toFixed(2)}
                         </span>
                       </div>
                     </div>
 
                     <div className="pt-2 border-t">
-                      <div className="text-xs text-muted-foreground mb-2">
-                        Route Stops
-                      </div>
+                      <div className="text-xs text-muted-foreground mb-2">Route Stops</div>
                       <div className="space-y-1">
                         {mainRoute.route_stops
                           ?.slice(0, 3)
-                          .map(
-                            (stop: {
-                              id: string
-                              customer?: { name?: string; cost?: number }
-                            }) => (
-                              <div
-                                key={stop.id}
-                                className="flex items-center gap-2 text-xs"
-                              >
+                          .map((stop) => {
+                            const customer = getStopCustomer(stop)
+                            return (
+                              <div key={stop.id} className="flex items-center gap-2 text-xs">
                                 <div className="h-1.5 w-1.5 rounded-full bg-current" />
                                 <span className="truncate flex-1">
-                                  {stop.customer?.name}
+                                  {customer?.name}
                                 </span>
                                 <span className="text-muted-foreground">
-                                  $
-                                  {Number(
-                                    stop.customer?.cost
-                                  ).toFixed(0)}
+                                  ${Number(customer?.cost || 0).toFixed(0)}
                                 </span>
                               </div>
                             )
-                          )}
+                          })}
                         {stopCount > 3 && (
                           <div className="text-xs text-muted-foreground pl-3">
                             +{stopCount - 3} more stops
@@ -455,4 +481,3 @@ export function RoutesOverview({
     </div>
   )
 }
-
