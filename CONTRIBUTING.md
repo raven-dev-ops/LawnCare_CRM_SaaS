@@ -4,13 +4,13 @@ Thanks for helping improve LawnCare CRM.
 
 ## Quick Start
 1. Install dependencies: `npm install`
-2. Copy `.env.example` to `.env` and fill in values.
+2. Copy `.env.example` to `.env.local` and fill in values.
 3. Run the app: `npm run dev`
 
 For more details, see `DEVELOPMENT.md`.
 
 ## Code Style
-- Run `npm run lint` before opening a PR.
+- Run `npm run lint`, `npm run typecheck`, and `npm run test` before opening a PR.
 - Prettier is optional but the repo includes `.prettierrc.json` for consistency.
 
 ## Database Changes

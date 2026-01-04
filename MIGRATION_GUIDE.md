@@ -44,6 +44,9 @@ If you use Google Sheets, export as **CSV** before importing.
 
 Duplicates are detected by **Name + Address**. You can choose to skip or keep duplicates.
 
+## Optional: Google Sheets Connection
+If you want a live connection instead of CSV exports, go to Customers -> Import / Export -> Google Sheets, connect via OAuth, and load a sheet by URL/ID. Tokens are stored in Supabase Vault.
+
 ## Workshop and Unscheduled Rules
 - **Type**: `Workshop` is a valid customer type.
 - **Day**: Leave blank for **Unscheduled**. `Workshop` is not a service day.
