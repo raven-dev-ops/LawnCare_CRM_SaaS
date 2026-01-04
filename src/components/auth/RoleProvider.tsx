@@ -5,6 +5,9 @@ import { createClient } from '@/lib/supabase/client'
 
 export type UserRole = 'admin' | 'staff'
 
+const SUPABASE_AUTH_DISABLED =
+  process.env.NEXT_PUBLIC_SUPABASE_AUTH_DISABLED === 'true'
+
 type RoleContextValue = {
   role: UserRole
   isAdmin: boolean
@@ -18,6 +21,12 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    if (SUPABASE_AUTH_DISABLED) {
+      setRole('admin')
+      setIsLoading(false)
+      return
+    }
+
     const supabase = createClient()
 
     const loadRole = async (userId: string | null) => {

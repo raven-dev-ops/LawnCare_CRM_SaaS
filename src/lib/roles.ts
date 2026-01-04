@@ -8,6 +8,10 @@ type RoleResult = {
 }
 
 export async function getUserRole(): Promise<RoleResult> {
+  if (process.env.SUPABASE_AUTH_DISABLED === 'true') {
+    return { role: 'admin', userId: null }
+  }
+
   const supabase = await createClient()
   const { data, error: userError } = await supabase.auth.getUser()
 
