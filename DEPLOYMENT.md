@@ -2,6 +2,19 @@
 
 This app is a standard Next.js 16 deployment. Vercel is the simplest option, but any Node hosting provider works as long as environment variables are set.
 
+## Access Provisioning (Week 1)
+
+Before deploying, confirm access and ownership for all required systems. Capture owners/roles in
+`ACCESS.md` and validate that least-privilege roles are in place.
+
+Checklist:
+- GitHub repo admin access
+- Supabase project owner access
+- Hosting provider admin access (Vercel or equivalent)
+- Google Cloud access (Maps API + OAuth)
+- Stripe access (keys + webhooks)
+- Notifications access (SendGrid/Twilio) if used
+
 ## 1) Provision Supabase
 
 1. Create a Supabase project.
@@ -44,6 +57,13 @@ Google Sheets (if using Sheets import/export):
 - `GOOGLE_CLIENT_SECRET`
 - `GOOGLE_SHEETS_REDIRECT_URI`
 
+## Credential Storage and Rotation
+
+- Store secrets in hosting provider environment variables; do not commit secrets to git.
+- Use Supabase Vault for Google Sheets OAuth tokens (already implemented).
+- Rotate Stripe, Google, and Supabase keys on a regular cadence (quarterly or on access changes).
+- Restrict API keys by origin/IP wherever supported (Google Maps, OAuth).
+
 ## 3) Configure Stripe Webhooks (Optional)
 
 1. Create a webhook endpoint in Stripe:
@@ -79,6 +99,10 @@ Google Sheets (if using Sheets import/export):
 - Confirm Google Maps renders on Customers and Routes.
 - If using Stripe, run a test checkout and confirm webhook payment ingestion.
 - If using Google Sheets, connect a sheet and import a sample row.
+
+## Monitoring and Logging
+
+See `MONITORING.md` for logging locations, alert thresholds, and escalation steps.
 
 ## Troubleshooting
 

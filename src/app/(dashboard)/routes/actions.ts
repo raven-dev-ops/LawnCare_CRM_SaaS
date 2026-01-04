@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { GOOGLE_MAPS_SERVER_API_KEY } from '@/lib/config'
 import { getShopLocation } from '@/lib/settings'
 import { buildStopOrderIds, chunkRouteStops, estimateRouteMetrics, getCompletionPlan, GOOGLE_DIRECTIONS_MAX_WAYPOINTS, optimizeRouteNearestNeighborWithIndices } from '@/lib/routes'
+import { logAuditEvent } from '@/lib/audit'
 
 const SERVICE_TIME_PER_STOP_MIN = 30
 
@@ -390,6 +391,13 @@ export async function createRoute(input: CreateRouteInput) {
     return { error: 'Failed to create route stops' }
   }
 
+  await logAuditEvent(supabase, {
+    action: 'create',
+    entityType: 'route',
+    entityId: route.id,
+    afterData: route,
+  })
+
   revalidatePath('/routes')
   return { success: true, routeId: route.id, warning }
 }
@@ -402,6 +410,12 @@ export async function updateRouteStatus(input: UpdateRouteStatusInput) {
   const supabase = auth.supabase
 
   try {
+    const { data: before } = await supabase
+      .from('routes')
+      .select('*')
+      .eq('id', input.routeId)
+      .maybeSingle()
+
     interface RouteUpdate {
       status: string
       updated_at: string
@@ -438,6 +452,14 @@ export async function updateRouteStatus(input: UpdateRouteStatusInput) {
       console.error('Update route status error:', error)
       return { error: 'Failed to update route status' }
     }
+
+    await logAuditEvent(supabase, {
+      action: 'status_change',
+      entityType: 'route',
+      entityId: input.routeId,
+      beforeData: before ?? null,
+      afterData: data ?? null,
+    })
     revalidatePath(`/routes/${input.routeId}`)
     revalidatePath('/routes')
     return { success: true, route: data || null }
@@ -626,6 +648,17 @@ export async function addStopToRoute(input: AddStopInput) {
     }
   }
 
+  await logAuditEvent(supabase, {
+    action: 'add_stop',
+    entityType: 'route',
+    entityId: input.routeId,
+    afterData: {
+      customerId: input.customerId,
+      newStopId,
+      stopOrder: orderedStopIds,
+    },
+  })
+
   revalidatePath(`/routes/${input.routeId}`)
   revalidatePath('/routes')
 
@@ -641,6 +674,12 @@ export async function assignRouteDriver(input: AssignRouteDriverInput) {
   const supabase = await createClient()
 
   let driverName: string | null = null
+
+  const { data: before } = await supabase
+    .from('routes')
+    .select('*')
+    .eq('id', input.routeId)
+    .maybeSingle()
 
   if (input.driverId) {
     const { data: driver, error: driverError } = await supabase
@@ -661,7 +700,7 @@ export async function assignRouteDriver(input: AssignRouteDriverInput) {
     driverName = driver.name
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('routes')
     .update({
       driver_id: input.driverId ?? null,
@@ -669,11 +708,21 @@ export async function assignRouteDriver(input: AssignRouteDriverInput) {
       updated_at: new Date().toISOString(),
     })
     .eq('id', input.routeId)
+    .select()
+    .maybeSingle()
 
   if (error) {
     console.error('Assign driver update error:', error)
     return { error: 'Failed to assign driver.' }
   }
+
+  await logAuditEvent(supabase, {
+    action: 'assign_driver',
+    entityType: 'route',
+    entityId: input.routeId,
+    beforeData: before ?? null,
+    afterData: data ?? null,
+  })
 
   revalidatePath(`/routes/${input.routeId}`)
   revalidatePath('/routes')
@@ -685,6 +734,11 @@ export async function assignRouteDriver(input: AssignRouteDriverInput) {
 export async function updateRouteStop(input: UpdateStopInput) {
   const supabase = await createClient()
   try {
+    const { data: before } = await supabase
+      .from('route_stops')
+      .select('*')
+      .eq('id', input.stopId)
+      .maybeSingle()
     interface StopUpdate {
       status: string
       updated_at: string
@@ -736,6 +790,14 @@ export async function updateRouteStop(input: UpdateStopInput) {
       console.error('Update route stop error:', error)
       return { error: 'Failed to update route stop' }
     }
+
+    await logAuditEvent(supabase, {
+      action: 'update_stop',
+      entityType: 'route_stop',
+      entityId: input.stopId,
+      beforeData: before ?? null,
+      afterData: data ?? null,
+    })
 
     // Get route_id to revalidate
     const { data: stop } = await supabase
@@ -845,6 +907,12 @@ export async function deleteRoute(routeId: string) {
   const supabase = await createClient()
 
   try {
+    const { data: existing } = await supabase
+      .from('routes')
+      .select('*')
+      .eq('id', routeId)
+      .maybeSingle()
+
     // Delete route
     const { error: routeError } = await supabase
       .from('routes')
@@ -855,6 +923,14 @@ export async function deleteRoute(routeId: string) {
       console.error('Delete route error:', routeError)
       return { error: 'Failed to delete route' }
     }
+
+    await logAuditEvent(supabase, {
+      action: 'delete',
+      entityType: 'route',
+      entityId: routeId,
+      beforeData: existing ?? null,
+      afterData: null,
+    })
 
     revalidatePath('/routes')
     return { success: true }

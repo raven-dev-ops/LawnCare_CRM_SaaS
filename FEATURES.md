@@ -5,6 +5,7 @@
 - Filters, search, and CSV import/export
 - Google Sheets integration for import/export
 - Customer geocoding and distance metrics
+- Customer notes and communication log
 
 ## Routing and Scheduling
 - Routes and route stops grouped by day
@@ -28,6 +29,8 @@
 - Dashboard metrics and quick views
 - Business profile and notification settings
 - Role-based access with admin-only imports
+- Admin audit logs for key changes
+- CSV exports for KPIs, routes, and service history
 
 ## UI and Design
 - Responsive layout with sidebar navigation

@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { geocodeAddress } from '@/lib/geocoding'
 import { getShopLocation } from '@/lib/settings'
 import { haversineMilesKm } from '@/lib/geo'
+import { logAuditEvent } from '@/lib/audit'
 import type { Inquiry, InquiryUpdate, Customer } from '@/types/database.types'
 
 type InquiryStatus = Inquiry['status']
@@ -32,15 +33,31 @@ export async function updateInquiryDetails(input: UpdateInquiryDetailsInput) {
     return { error: 'No updates provided.' }
   }
 
-  const { error } = await supabase
+  const { data: before } = await supabase
+    .from('inquiries')
+    .select('*')
+    .eq('id', input.inquiryId)
+    .single()
+
+  const { data, error } = await supabase
     .from('inquiries')
     .update(updates)
     .eq('id', input.inquiryId)
+    .select()
+    .single()
 
   if (error) {
     console.error('Error updating inquiry details:', error)
     return { error: 'Failed to update inquiry details.' }
   }
+
+  await logAuditEvent(supabase, {
+    action: 'update',
+    entityType: 'inquiry',
+    entityId: input.inquiryId,
+    beforeData: before ?? null,
+    afterData: data ?? null,
+  })
 
   revalidatePath('/inquiries')
   revalidatePath(`/inquiries/${input.inquiryId}`)
@@ -59,15 +76,31 @@ export async function updateInquiryStatus(id: string, status: InquiryStatus) {
     updates.contacted_at = new Date().toISOString()
   }
 
-  const { error } = await supabase
+  const { data: before } = await supabase
+    .from('inquiries')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  const { data, error } = await supabase
     .from('inquiries')
     .update(updates)
     .eq('id', id)
+    .select()
+    .single()
 
   if (error) {
     console.error('Error updating inquiry status:', error)
     return { error: 'Failed to update inquiry.' }
   }
+
+  await logAuditEvent(supabase, {
+    action: 'status_change',
+    entityType: 'inquiry',
+    entityId: id,
+    beforeData: before ?? null,
+    afterData: data ?? null,
+  })
 
   revalidatePath('/inquiries')
   return { success: true }
@@ -145,18 +178,35 @@ export async function convertInquiryToCustomer(input: ConvertInquiryInput) {
     return { error: 'Failed to create customer.' }
   }
 
-  const { error: updateError } = await supabase
+  await logAuditEvent(supabase, {
+    action: 'create',
+    entityType: 'customer',
+    entityId: customer.id,
+    afterData: customer,
+  })
+
+  const { data: updatedInquiry, error: updateError } = await supabase
     .from('inquiries')
     .update({
       status: 'converted',
       converted_customer_id: customer.id,
     })
     .eq('id', input.inquiryId)
+    .select()
+    .single()
 
   if (updateError) {
     console.error('Error linking inquiry to customer:', updateError)
     return { error: 'Customer created, but failed to link inquiry.' }
   }
+
+  await logAuditEvent(supabase, {
+    action: 'convert',
+    entityType: 'inquiry',
+    entityId: input.inquiryId,
+    beforeData: inquiry,
+    afterData: updatedInquiry ?? null,
+  })
 
   revalidatePath('/inquiries')
   revalidatePath('/customers')

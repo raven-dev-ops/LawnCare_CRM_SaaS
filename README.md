@@ -85,12 +85,23 @@ Stripe checkout sessions are created from the invoice detail page. Successful we
 - `ARCHITECTURE_DIAGRAM.png` - diagram export for presentations
 - `API_REFERENCE.md` - API routes and payloads
 - `DEPLOYMENT.md` - production setup checklist
+- `DEPLOYMENT_LOG.md` - deployment validation records
 - `TROUBLESHOOTING.md` - common issues and fixes
 - `ROADMAP.md` - planned enhancements
+- `BACKLOG_REVIEW.md` - SOW-to-repo backlog mapping
+- `RELEASE_PLAN.md` - staging to production release flow
 - `CONTRIBUTING.md` - contribution guidelines
 - `SECURITY.md` - security policy
+- `SECURITY_REVIEW.md` - security review log
+- `VALIDATION.md` - migration and RLS validation log
 - `CHANGELOG.md` - release notes
 - `RELEASE_CHECKLIST.md` - release steps
+- `PERFORMANCE.md` - performance baseline notes
+- `ACCESS.md` - access provisioning and owners
+- `MONITORING.md` - monitoring and logging runbook
+- `METRICS.md` - KPI definitions and targets
+- `UAT_CHECKLIST.md` - acceptance test checklist
+- `HANDOFF.md` - operations handoff guide
 - `supabase/migrations/` - database schema + RLS policies
 
 ## Row Level Security (RLS)

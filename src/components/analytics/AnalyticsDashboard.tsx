@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { GOOGLE_MAPS_BROWSER_API_KEY } from '@/lib/config'
+import { KPI_TARGETS } from '@/lib/metrics'
 import {
   ResponsiveContainer,
   BarChart as RechartsBarChart,
@@ -210,6 +211,18 @@ export function AnalyticsDashboard({
     return { start: endValue, end: startValue }
   }, [rangeStart, rangeEnd])
 
+  const exportStart = useMemo(() => formatDateInput(normalizedRange.start), [normalizedRange.start])
+  const exportEnd = useMemo(() => formatDateInput(normalizedRange.end), [normalizedRange.end])
+
+  const buildExportUrl = (type: string) => {
+    const params = new URLSearchParams({
+      type,
+      start: exportStart,
+      end: exportEnd,
+    })
+    return `/api/analytics/export?${params.toString()}`
+  }
+
   const rangeDays = useMemo(() => {
     return Math.max(1, daysBetween(normalizedRange.start, normalizedRange.end) + 1)
   }, [normalizedRange])
@@ -306,6 +319,21 @@ export function AnalyticsDashboard({
 
   const hasRouteData = routeStatsInRange.length > 0
   const hasServiceData = serviceHistoryInRange.length > 0
+
+  const revenueTargetLabel =
+    KPI_TARGETS.revenuePerDay != null
+      ? `Target: ${formatCurrency(KPI_TARGETS.revenuePerDay, 0)}`
+      : 'Target: not set'
+
+  const stopsTargetLabel =
+    KPI_TARGETS.avgStopsPerDay != null
+      ? `Target: ${formatNumber(KPI_TARGETS.avgStopsPerDay, 1)}`
+      : 'Target: not set'
+
+  const completionTargetLabel =
+    KPI_TARGETS.completionRate != null
+      ? `Target: ${formatPercent(KPI_TARGETS.completionRate, 1)}`
+      : 'Target: not set'
 
   const selectedRouteDays = useMemo(
     () => selectedDays.filter((day) => ROUTE_DAYS.includes(day)),
@@ -452,6 +480,17 @@ export function AnalyticsDashboard({
               <div className="text-xs text-slate-500">Prev: {compareLabel}</div>
             )}
           </div>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm" className="border-slate-300 text-slate-700">
+              <a href={buildExportUrl('kpis')}>Export KPIs</a>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="border-slate-300 text-slate-700">
+              <a href={buildExportUrl('route-stats')}>Export Routes</a>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="border-slate-300 text-slate-700">
+              <a href={buildExportUrl('service-history')}>Export Service History</a>
+            </Button>
+          </div>
         </div>
         <div className="mt-4 flex items-center gap-2 lg:hidden">
           <Button
@@ -593,6 +632,7 @@ export function AnalyticsDashboard({
               compareValue={
                 compareRange ? `Prev: ${formatCurrency(revenuePerDayCompare || 0, 0)}` : undefined
               }
+              targetValue={revenueTargetLabel}
             />
             <KpiCard
               title="Average stops per day"
@@ -608,6 +648,7 @@ export function AnalyticsDashboard({
               compareValue={
                 compareRange ? `Prev: ${formatNumber(avgStopsPerDayCompare || 0, 1)}` : undefined
               }
+              targetValue={stopsTargetLabel}
             />
             <KpiCard
               title="Completion rate"
@@ -625,6 +666,7 @@ export function AnalyticsDashboard({
                   ? `Prev: ${formatPercent(completionRateCompare, 1)}`
                   : undefined
               }
+              targetValue={completionTargetLabel}
             />
             <Card className="bg-white text-slate-900 border-slate-200 shadow-sm">
               <CardHeader className="pb-2">
@@ -746,12 +788,14 @@ function KpiCard({
   value,
   subValue,
   compareValue,
+  targetValue,
 }: {
   title: string
   description?: string
   value: string
   subValue?: string
   compareValue?: string
+  targetValue?: string
 }) {
   return (
     <Card className="bg-white text-slate-900 border-slate-200 shadow-sm">
@@ -763,6 +807,7 @@ function KpiCard({
         <div className="text-3xl font-bold">{value}</div>
         {subValue ? <div className="text-xs text-slate-500">{subValue}</div> : null}
         {compareValue ? <div className="text-xs text-slate-500">{compareValue}</div> : null}
+        {targetValue ? <div className="text-xs text-slate-500">{targetValue}</div> : null}
       </CardContent>
     </Card>
   )

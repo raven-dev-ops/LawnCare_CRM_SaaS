@@ -71,6 +71,64 @@ export interface Database {
           archived_at?: string | null
         }
       }
+      customer_notes: {
+        Row: {
+          id: string
+          customer_id: string
+          channel: 'note' | 'call' | 'email' | 'sms' | 'in_person' | 'other'
+          message: string
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          customer_id: string
+          channel?: 'note' | 'call' | 'email' | 'sms' | 'in_person' | 'other'
+          message: string
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          customer_id?: string
+          channel?: 'note' | 'call' | 'email' | 'sms' | 'in_person' | 'other'
+          message?: string
+          created_by?: string | null
+          created_at?: string
+        }
+      }
+      audit_logs: {
+        Row: {
+          id: string
+          actor_id: string | null
+          action: string
+          entity_type: string
+          entity_id: string | null
+          before_data: Json | null
+          after_data: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          actor_id?: string | null
+          action: string
+          entity_type: string
+          entity_id?: string | null
+          before_data?: Json | null
+          after_data?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          actor_id?: string | null
+          action?: string
+          entity_type?: string
+          entity_id?: string | null
+          before_data?: Json | null
+          after_data?: Json | null
+          created_at?: string
+        }
+      }
       products_services: {
         Row: {
           id: string
@@ -829,6 +887,12 @@ export interface Database {
 export type Customer = Database['public']['Tables']['customers']['Row']
 export type CustomerInsert = Database['public']['Tables']['customers']['Insert']
 export type CustomerUpdate = Database['public']['Tables']['customers']['Update']
+export type CustomerNote = Database['public']['Tables']['customer_notes']['Row']
+export type CustomerNoteInsert = Database['public']['Tables']['customer_notes']['Insert']
+export type CustomerNoteUpdate = Database['public']['Tables']['customer_notes']['Update']
+export type AuditLog = Database['public']['Tables']['audit_logs']['Row']
+export type AuditLogInsert = Database['public']['Tables']['audit_logs']['Insert']
+export type AuditLogUpdate = Database['public']['Tables']['audit_logs']['Update']
 
 export type Product = Database['public']['Tables']['products_services']['Row']
 export type ProductInsert = Database['public']['Tables']['products_services']['Insert']

@@ -29,6 +29,18 @@ This directory contains all database migrations for the Lawn Care CRM system.
 - Auto-renewal tracking
 - Next service date calculations
 
+### 20260108120000_create_customer_notes.sql
+**Customer notes** - Creates the `customer_notes` table for:
+- CRM communication log entries
+- Channel tagging (call, email, sms, in-person)
+- Admin/staff visibility with RLS policies
+
+### 20260108123000_create_audit_logs.sql
+**Audit logs** - Creates the `audit_logs` table for:
+- Change tracking with before/after JSON
+- Actor attribution
+- Admin-only read access via RLS
+
 ### 20251007200404_create_routes.sql
 **Daily routes** - Creates the `routes` table for:
 - Planned daily service routes
@@ -86,7 +98,7 @@ This directory contains all database migrations for the Lawn Care CRM system.
 npm install -g supabase
 
 # Link to your Supabase project
-supabase link --project-ref saxtqposxmdxbmjbcmpc
+supabase link --project-ref <project-ref>
 
 # Push migrations to production
 supabase db push
