@@ -10,26 +10,6 @@ A Next.js 16 (App Router) + Supabase + Google Maps CRM for lawn care businesses 
 - Analytics dashboards with KPI exports and admin audit logs
 - Google Sheets OAuth integration with Supabase Vault token storage
 
-## UI Screenshots (Playwright)
-
-Captured via `npm run test:e2e:screenshots`. Assets live in `tests/e2e/screenshots`.
-
-| Screen | Desktop | Mobile |
-| --- | --- | --- |
-| Dashboard | ![Dashboard desktop](tests/e2e/screenshots/desktop/dashboard.png) | ![Dashboard mobile](tests/e2e/screenshots/mobile/dashboard.png) |
-| Analytics | ![Analytics desktop](tests/e2e/screenshots/desktop/analytics.png) | ![Analytics mobile](tests/e2e/screenshots/mobile/analytics.png) |
-| Customers | ![Customers desktop](tests/e2e/screenshots/desktop/customers.png) | ![Customers mobile](tests/e2e/screenshots/mobile/customers.png) |
-| Routes | ![Routes desktop](tests/e2e/screenshots/desktop/routes.png) | ![Routes mobile](tests/e2e/screenshots/mobile/routes.png) |
-| Schedule | ![Schedule desktop](tests/e2e/screenshots/desktop/schedule.png) | ![Schedule mobile](tests/e2e/screenshots/mobile/schedule.png) |
-| Services | ![Services desktop](tests/e2e/screenshots/desktop/services.png) | ![Services mobile](tests/e2e/screenshots/mobile/services.png) |
-| Crew | ![Crew desktop](tests/e2e/screenshots/desktop/crew.png) | ![Crew mobile](tests/e2e/screenshots/mobile/crew.png) |
-| Invoices | ![Invoices desktop](tests/e2e/screenshots/desktop/invoices.png) | ![Invoices mobile](tests/e2e/screenshots/mobile/invoices.png) |
-| Inquiries | ![Inquiries desktop](tests/e2e/screenshots/desktop/inquiries.png) | ![Inquiries mobile](tests/e2e/screenshots/mobile/inquiries.png) |
-| Inquiry | ![Inquiry desktop](tests/e2e/screenshots/desktop/inquiry.png) | ![Inquiry mobile](tests/e2e/screenshots/mobile/inquiry.png) |
-| Audit Logs | ![Audit logs desktop](tests/e2e/screenshots/desktop/audit-logs.png) | ![Audit logs mobile](tests/e2e/screenshots/mobile/audit-logs.png) |
-| Settings | ![Settings desktop](tests/e2e/screenshots/desktop/settings.png) | ![Settings mobile](tests/e2e/screenshots/mobile/settings.png) |
-| Login | ![Login desktop](tests/e2e/screenshots/desktop/login.png) | ![Login mobile](tests/e2e/screenshots/mobile/login.png) |
-
 ## Connection Health
 Legend: ![green](https://img.shields.io/badge/health-green) configured, ![red](https://img.shields.io/badge/health-red) missing/disabled. Update per environment.
 
