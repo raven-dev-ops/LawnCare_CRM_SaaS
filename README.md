@@ -132,7 +132,6 @@ Stripe checkout sessions are created from the invoice detail page. Successful we
 - `METRICS.md` - KPI definitions and targets
 - `UAT_CHECKLIST.md` - acceptance test checklist
 - `HANDOFF.md` - operations handoff guide
-- `ISSUES.md` - SOW milestone issue checklist
 - `supabase/migrations/` - database schema + RLS policies
 
 ## Row Level Security (RLS)
